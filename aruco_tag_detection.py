@@ -2,18 +2,16 @@
 import cv2
 
 
-#detected_aruco_tags = aruco_tag_detection.detect_aruco_markers_in_frame(frame, aruco_type = cv2.aruco.DICT_APRILTAG_36h11)
+#detected_aruco_tags = aruco_tag_detection.detect_aruco_markers_in_frame(frame, camera, aruco_type = cv2.aruco.DICT_APRILTAG_36h11)
 
 # Define a Function ot Detect AruCo markers in Image frame
-def detect_aruco_markers_in_frame(frame, aruco_type):
+def detect_aruco_markers_in_frame(frame, camera, aruco_type):
 
 	# Create the Parameters to Detect AruCo markers
 	arucoDict = cv2.aruco.getPredefinedDictionary(aruco_type)
 	arucoParams =  cv2.aruco.DetectorParameters()
-	detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
 
 	# Detect Corners, IDs of AruCo markers in Frame
-	markerCorners, markerIds, rejectedCandidates = detector.detectMarkers(frame)
 	corners, ids, _ = cv2.aruco.detectMarkers(frame, arucoDict, parameters = arucoParams)
 
 	# If AruCo tags are Detected
@@ -23,15 +21,15 @@ def detect_aruco_markers_in_frame(frame, aruco_type):
 		detected_aruco_tags = get_dict_of_aruco_tags_detected(corners, ids)
 
 		# Display the AruCo marker on the Frame
-		frame_with_detected_markers = aruco_display(detected_aruco_tags, frame)
-		cv2.imshow("Image", frame_with_detected_markers)
+		aruco_in_image = aruco_display(detected_aruco_tags, frame)
+		cv2.imshow(camera, aruco_in_image)
 
 		# Return the Dictionary of AruCo tags
 		return detected_aruco_tags
 
 	# Else return None if No AruCo tags are Detected
 	else:
-		cv2.imshow("Image", frame)
+		cv2.imshow(camera, frame)
 		return None
 
 
