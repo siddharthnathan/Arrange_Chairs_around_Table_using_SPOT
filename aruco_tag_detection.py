@@ -2,8 +2,6 @@
 import cv2
 
 
-#detected_aruco_tags = aruco_tag_detection.detect_aruco_markers_in_frame(frame, camera, aruco_type = cv2.aruco.DICT_APRILTAG_36h11)
-
 # Define a Function ot Detect AruCo markers in Image frame
 def detect_aruco_markers_in_frame(frame, camera, aruco_type):
 
