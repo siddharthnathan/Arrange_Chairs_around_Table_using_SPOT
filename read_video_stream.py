@@ -4,45 +4,53 @@ import numpy as np
 import cv2
 
 
-# Define a Function to Configure and Stream Realsense Pipeline
+# Define a Function to Configure and Stream Realsense Pipeline using Cameras
 def configure_and_stream_pipeline():
 
-    # Configure the RealSense pipeline
-    pipeline1 = rs.pipeline()
-    pipeline2 = rs.pipeline()
-    config1 = rs.config()
-    config2 = rs.config()
-
-    # Find the cameras devices
+    # Exit if the Number of Cameras are less than 2
     devices = rs.context().devices
     if len(devices) < 2:
         print("Not enough cameras connected.")
         exit()
+    
+    # If there are 2 cameras connected
+    else:
 
-    # Enable the Camera streams
-    config1.enable_device(devices[0].get_info(rs.camera_info.serial_number))
-    config2.enable_device(devices[1].get_info(rs.camera_info.serial_number))
-    config1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    config2.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        # Initialise Pipelines for Cameras
+        pipelines = []
 
-    # Start streaming
-    pipeline1.start(config1)
-    pipeline2.start(config2)
+        # For every Device connected
+        for device in devices:
 
-    # Return the Pipelines
-    return pipeline1, pipeline2
+            # Configure the RealSense pipeline
+            pipeline = rs.pipeline()
+            config = rs.config()
+
+            # Enable the Camera streams
+            config.enable_device(device.get_info(rs.camera_info.serial_number))
+            config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+            # Start streaming
+            pipeline.start(config)
+            pipelines.append(pipeline)
+        
+        # Extract Pipelines for Main camera and Side camera
+        main_camera_pipeline, side_camera_pipeline = pipelines
+
+        # Return the Pipelines
+        return main_camera_pipeline, side_camera_pipeline
 
 
 # Define a Function to Read Image frames from Pipelines
-def read_frames_from_pipelines(main_cam_pipeline, side_cam_pipeline):
+def read_frames_from_pipelines(main_camera_pipeline, side_camera_pipeline):
 
     # Get Frames from Main camera
-    main_camera_frame = main_cam_pipeline.wait_for_frames()
+    main_camera_frame = main_camera_pipeline.wait_for_frames()
     main_camera_frame = main_camera_frame.get_color_frame()
     main_camera_frame = np.asanyarray(main_camera_frame.get_data())
 
     # Get Frames from Side camera
-    side_camera_frame = side_cam_pipeline.wait_for_frames()
+    side_camera_frame = side_camera_pipeline.wait_for_frames()
     side_camera_frame = side_camera_frame.get_color_frame()
     side_camera_frame = np.asanyarray(side_camera_frame.get_data())
 

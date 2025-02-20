@@ -1,10 +1,12 @@
 # Import Necessary Libraries
-import numpy as np
 import cv2
 
 
 # Define a Function to Get Pose of AruCo tag in Image frame
-def get_pose_of_aruco_tags(frame, aruco_dict_type, matrix_coefficients, distortion_coefficients):
+def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
+
+    # Extract Camera Matrix and Distortion coefficients
+    matrix_coefficients, distortion_coefficients = camera_calibration_params['Calibration_matrix'], camera_calibration_params['Distortion_coefficients']
 
     # Convert the Image into Grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -14,7 +16,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, matrix_coefficients, distorti
     arucoParams =  cv2.aruco.DetectorParameters()
     
     # Create the Parameters to Detect AruCo markers
-    corners, ids, rejected_img_points = cv2.aruco.detectMarkers(gray, arucoDict, parameters = arucoParams)
+    corners, ids, _ = cv2.aruco.detectMarkers(gray, arucoDict, parameters = arucoParams)
 
     # If AruCo tags are Detected
     if len(corners) > 0:
@@ -26,7 +28,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, matrix_coefficients, distorti
         for i in range(0, len(ids)):
 
             # Estimate pose of each marker and return the values of Rotational vector & Translation vector
-            rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients, distortion_coefficients)
+            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients, distortion_coefficients)
             
             # Create a Dictionary to store Pose of AruCo tag and Append
             aruco_tag_pose = {}
@@ -39,7 +41,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, matrix_coefficients, distorti
             cv2.aruco.drawDetectedMarkers(frame, corners) 
 
             # Draw Axis at the center of the AruCo tag in Frame
-            frame_with_aruco_tags_pose = cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, length=0.003)
+            frame_with_aruco_tags_pose = cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, length = 3e-3)
 
         # Return the Image frame with Pose of AruCo markers
         return frame_with_aruco_tags_pose, poses_of_aruco_tags
