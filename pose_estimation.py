@@ -14,38 +14,46 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
     # Create the Parameters to Detect AruCo markers
     arucoDict = cv2.aruco.getPredefinedDictionary(aruco_dict_type)
     arucoParams =  cv2.aruco.DetectorParameters()
+
+    # Adjust detector parameters for small markers
+    arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+
+    # Create AruCo detector with those Parameters
+    detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
     
     # Create the Parameters to Detect AruCo markers
-    corners, ids, _ = cv2.aruco.detectMarkers(gray, arucoDict, parameters = arucoParams)
+    corners, ids, _ = detector.detectMarkers(gray)
 
-    # If AruCo tags are Detected
-    if len(corners) > 0:
+    # If AruCo IDs are Detected
+    if ids is not None:
 
-        # Initialise List to store Pose of AruCo tags
+        # Initialise List to store Poses of AruCo markers
         poses_of_aruco_tags = []
+    
+        # For every AruCo ID detected
+        for i in range(len(ids)):
 
-        # For every Detected AruCo tag
-        for i in range(0, len(ids)):
-
-            # Estimate pose of each marker and return the values of Rotational vector & Translation vector
-            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients, distortion_coefficients)
-            
-            # Create a Dictionary to store Pose of AruCo tag and Append
+            # Initialise Dictionary to store Pose of an AruCo marker
             aruco_tag_pose = {}
+            
+            # Compute the Pose of AruCo markers
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.5, matrix_coefficients, distortion_coefficients)
+            
+            # Store all Parameters into Dictionary
             aruco_tag_pose['ID'] = int(ids[i])
-            aruco_tag_pose['Translation'] = tvec[0][0]
-            aruco_tag_pose['Rotation'] = rvec[0][0]
+            aruco_tag_pose['Translation'] = list(tvecs[0][0])
+            aruco_tag_pose['Rotation'] = list(rvecs[0][0])
+            
+            # Draw Pose axes in the AruCo tag image
+            cv2.aruco.drawDetectedMarkers(frame, corners)
+            cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvecs[i], tvecs[i], 0.1)
+
+            # Append Pose of AruCo tag into List
             poses_of_aruco_tags.append(aruco_tag_pose)
-
-            # Draw a square around the AruCo tag in Frame
-            cv2.aruco.drawDetectedMarkers(frame, corners) 
-
-            # Draw Axis at the center of the AruCo tag in Frame
-            frame_with_aruco_tags_pose = cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, length = 3e-3)
-
-        # Return the Image frame with Pose of AruCo markers
-        return frame_with_aruco_tags_pose, poses_of_aruco_tags
-
-    # Else when AruCo tags are not Detected
+        
+        # Return Image and AruCo poses
+        return frame, poses_of_aruco_tags
+    
+    # Else Return None
     else:
         return frame, None

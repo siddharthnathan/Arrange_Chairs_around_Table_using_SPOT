@@ -83,7 +83,7 @@ def aruco_display(aruco_tags_dict, image):
 
 		# Draw the center (x, y) coordinates of the ArUco marker
 		[center_x, center_y] = aruco_tag['Center']
-		cv2.circle(image, (center_x, center_y), 4, (0, 0, 255), -1)
+		cv2.circle(image, (center_x, center_y), 3, (0, 0, 255), -1)
 		
 		# Draw the ArUco marker ID on the image
 		cv2.putText(image, str(aruco_tag['ID']),(topLeft[0], topLeft[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
