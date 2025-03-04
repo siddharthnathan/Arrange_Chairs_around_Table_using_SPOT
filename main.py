@@ -1,6 +1,5 @@
 # Import Necessary Scripts
 import read_video_stream
-import aruco_tag_detection
 import pose_estimation
 import utils
 
@@ -29,9 +28,6 @@ try:
         # Read Image frames from Pipelines
         main_camera_frame, side_camera_frame = read_video_stream.read_frames_from_pipelines(main_camera_pipeline, side_camera_pipeline)
         
-        # Detect AruCo tags in Main Camera frame
-        aruco_tags_detected_main_cam = aruco_tag_detection.detect_aruco_markers_in_frame(main_camera_frame, 'Main_Camera', aruco_type)
-
         # Get the Pose of AruCo tags in Main Camera frame
         image_with_aruco_poses, poses_of_aruco_tags = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])
         print(poses_of_aruco_tags)

@@ -1,4 +1,5 @@
 # Import Necessary Libraries
+import utils
 import cv2
 
 
@@ -35,14 +36,14 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
 
             # Initialise Dictionary to store Pose of an AruCo marker
             aruco_tag_pose = {}
-            
+
             # Compute the Pose of AruCo markers
-            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.5, matrix_coefficients, distortion_coefficients)
-            
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, utils.get_size_of_aruco_tag(int(ids[i])), matrix_coefficients, distortion_coefficients)
+   
             # Store all Parameters into Dictionary
-            aruco_tag_pose['ID'] = int(ids[i])
-            aruco_tag_pose['Translation'] = list(tvecs[0][0])
-            aruco_tag_pose['Rotation'] = list(rvecs[0][0])
+            aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))
+            aruco_tag_pose['Translation'] = utils.round_float_list(list(tvecs[i][0]), 4)
+            aruco_tag_pose['Rotation'] = utils.convert_rotvec_to_rotangles(list(rvecs[i][0]))
             
             # Draw Pose axes in the AruCo tag image
             cv2.aruco.drawDetectedMarkers(frame, corners)
