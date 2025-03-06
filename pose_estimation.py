@@ -42,9 +42,9 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
    
             # Store all Parameters into Dictionary
             aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))
-            aruco_tag_pose['Translation'] = utils.round_float_list(list(tvecs[i][0]), 4)
-            aruco_tag_pose['Rotation'] = utils.convert_rotvec_to_rotangles(list(rvecs[i][0]))
-            
+            aruco_tag_pose['Translation'] = utils.round_float_list(list(tvecs[i][0]), 3)
+            aruco_tag_pose['Rotation'] = utils.convert_rotation_vector_to_angles(list(rvecs[i][0]))
+
             # Draw Pose axes in the AruCo tag image
             cv2.aruco.drawDetectedMarkers(frame, corners)
             cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvecs[i], tvecs[i], 0.1)

@@ -11,6 +11,19 @@ def round_float_list(float_list, num_decimal_places):
     return [round(num, num_decimal_places) for num in float_list]
 
 
+# Define a Function to Round off values in a Matrix
+def round_matrix_list(matrix_list, num_decimal_places):
+
+	# For every Row in Matrix
+	for row in range(len(matrix_list)):
+
+		# Update the List of Rounded off float values
+		matrix_list[row] = [round(num, num_decimal_places) for num in matrix_list[row]]
+	
+	# Return the rounded off Rotation matrix
+	return matrix_list
+
+
 # Define a Function to Read Camera Calibration parameters
 def read_camera_calibration_params():
 
@@ -77,7 +90,7 @@ def get_size_of_aruco_tag(aruco_id):
 
 
 # Define a Function to convert Rotation vector to Rotation angles in degrees
-def convert_rotvec_to_rotangles(rotation_vector):
+def convert_rotation_vector_to_angles(rotation_vector):
 	
 	# Convert rotation vector to a Rotation object
 	rotation = R.from_rotvec(rotation_vector)
@@ -87,3 +100,14 @@ def convert_rotvec_to_rotangles(rotation_vector):
 
 	# Return the rounded off angles
 	return round_float_list(euler_angles, 3)
+
+
+# Define a Function to get Rotation matrix from Rotation angles in Degrees
+def get_rotation_matrix_from_angles(angles):
+  
+	# Compute Rotation matrix from Rotation euler angles
+	rotation_matrix = R.from_euler('xyz', angles, degrees = True).as_matrix()
+	rotation_matrix = round_matrix_list(rotation_matrix, 4)
+
+	# Return the Rotation matrix
+	return rotation_matrix

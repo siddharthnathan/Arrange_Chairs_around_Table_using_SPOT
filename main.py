@@ -1,6 +1,7 @@
 # Import Necessary Scripts
 import read_video_stream
 import pose_estimation
+import coordinate_transformations
 import utils
 
 # Import Necessary Libraries
@@ -30,7 +31,9 @@ try:
         
         # Get the Pose of AruCo tags in Main Camera frame
         image_with_aruco_poses, poses_of_aruco_tags = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])
-        print(poses_of_aruco_tags)
+        
+        # Convert the Poses of AruCo tags from Camera frame to World frame
+        poses_of_aruco_tags = coordinate_transformations.get_pose_from_camera_frame_to_world_frame(poses_of_aruco_tags)
 
         # Display the Image from Main Camera
         cv2.imshow('Main_Camera', image_with_aruco_poses)
