@@ -61,7 +61,7 @@ def resize_frame(frame, width):
 def get_object_with_aruco_tag(aruco_id):
 
 	# Define the Objects with their AruCo IDs
-	objects_with_aruco_ids = [{'ID': 24, 'Name': 'AruCo_on_Chair'}, {'ID': 19, 'Name': 'AruCo_on_SPOT'}]
+	objects_with_aruco_ids = [{'ID': 24, 'Name': 'Chair'}, {'ID': 19, 'Name': 'SPOT'}]
 
 	# For every Object in List
 	for object in objects_with_aruco_ids:
@@ -111,18 +111,3 @@ def get_rotation_matrix_from_angles(angles):
 
 	# Return the Rotation matrix
 	return rotation_matrix
-
-
-# Define a Function to Compute Transformation matrix from Translation vector and Rotation angles
-def get_transformation_matrix(translation_vector, rotation_matrix):
-
-	# Initialise Transformation matrix
-	transformation_matrix = np.zeros((4, 4))
-
-	# Form and Transformation matrix 
-	transformation_matrix[:3, :3] = rotation_matrix
-	transformation_matrix[:3, 3] = translation_vector
-	transformation_matrix[3, 3] = 1
-
-	# Return the Transformation matrix
-	return transformation_matrix

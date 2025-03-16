@@ -18,9 +18,8 @@ aruco_type = cv2.aruco.DICT_4X4_50
 camera_calibration_params = utils.read_camera_calibration_params()
 
 # Configure and Stream Realsense Pipeline
-#main_camera_pipeline, side_camera_pipeline = read_video_stream.configure_and_stream_pipeline()
+main_camera_pipeline, side_camera_pipeline = read_video_stream.configure_and_stream_pipeline()
 
-'''
 # Read Image frames from both the Cameras
 try:
 
@@ -35,7 +34,6 @@ try:
         
         # Convert the Poses of AruCo tags from Camera frame to World frame
         poses_of_aruco_tags = coordinate_transformations.get_pose_from_camera_frame_to_world_frame(poses_of_aruco_tags)
-        print(poses_of_aruco_tags)
 
         # Display the Image from Main Camera
         cv2.imshow('Main_Camera', image_with_aruco_poses)
@@ -50,18 +48,3 @@ finally:
 
     main_camera_pipeline.stop()
     side_camera_pipeline.stop()
-'''
-
-image = cv2.imread('scene.jpg')
-
-# Get the Pose of AruCo tags in Main Camera frame
-image_with_aruco_poses, aruco_tags_data_in_camera_frame = pose_estimation.get_pose_of_aruco_tags(image, aruco_type, camera_calibration_params['Main_Camera'])
-
-# Convert the Poses of AruCo tags from Camera frame to World frame
-aruco_tags_data_in_world_frame = coordinate_transformations.get_pose_from_camera_frame_to_world_frame(aruco_tags_data_in_camera_frame)
-for i in aruco_tags_data_in_world_frame:
-    i.display_data()
-
-# Display the Image from Main Camera
-cv2.imshow('Main_Camera', image_with_aruco_poses)
-cv2.waitKey(0)
