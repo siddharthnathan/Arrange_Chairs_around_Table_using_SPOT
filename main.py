@@ -1,5 +1,5 @@
 # Import Necessary Scripts
-import read_video_stream
+#import read_video_stream
 import pose_estimation
 import coordinate_transformations
 import utils
@@ -17,6 +17,7 @@ aruco_type = cv2.aruco.DICT_4X4_50
 # Read Camera Calibration parameters
 camera_calibration_params = utils.read_camera_calibration_params()
 
+'''
 # Configure and Stream Realsense Pipeline
 main_camera_pipeline, side_camera_pipeline = read_video_stream.configure_and_stream_pipeline()
 
@@ -47,4 +48,15 @@ try:
 finally:
 
     main_camera_pipeline.stop()
-    side_camera_pipeline.stop()
+    side_camera_pipeline.stop()'
+'''
+
+image = cv2.imread('scene.jpg')
+
+image_with_aruco_poses, aruco_tags_data_wrt_camera_frame = pose_estimation.get_pose_of_aruco_tags(image, aruco_type, camera_calibration_params['Main_Camera'])
+
+aruco_tags_data_wrt_world_frame = coordinate_transformations.compute_aruco_tags_data_to_world_frame(aruco_tags_data_wrt_camera_frame)
+
+
+cv2.imshow('Main_Camera', image_with_aruco_poses)
+cv2.waitKey(0)

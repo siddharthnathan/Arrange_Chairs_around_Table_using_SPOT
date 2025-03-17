@@ -61,7 +61,7 @@ def resize_frame(frame, width):
 def get_object_with_aruco_tag(aruco_id):
 
 	# Define the Objects with their AruCo IDs
-	objects_with_aruco_ids = [{'ID': 24, 'Name': 'Chair'}, {'ID': 19, 'Name': 'SPOT'}]
+	objects_with_aruco_ids = [{'ID': 24, 'Name': 'AruCo_on_Chair'}, {'ID': 19, 'Name': 'AruCo_on_SPOT'}]
 
 	# For every Object in List
 	for object in objects_with_aruco_ids:
@@ -100,14 +100,3 @@ def convert_rotation_vector_to_angles(rotation_vector):
 
 	# Return the rounded off angles
 	return round_float_list(euler_angles, 3)
-
-
-# Define a Function to get Rotation matrix from Rotation angles in Degrees
-def get_rotation_matrix_from_angles(angles):
-  
-	# Compute Rotation matrix from Rotation euler angles
-	rotation_matrix = R.from_euler('xyz', angles, degrees = True).as_matrix()
-	rotation_matrix = round_matrix_list(rotation_matrix, 4)
-
-	# Return the Rotation matrix
-	return rotation_matrix
