@@ -43,7 +43,7 @@ def calibrate(dirpath, square_size, width, height, visualize = False):
 
         # Visualise Checkerboard image with corners
         if visualize:
-            cv2.imshow('img',img)
+            cv2.imshow('img', img)
             cv2.waitKey(0)
 
     # Calibrate Camera using the Object points and Image points
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     ap.add_argument("-w", "--width", type = int, help = "Width of checkerboard (default = 8)",  default = 8)
     ap.add_argument("-t", "--height", type= int, help = "Height of checkerboard (default = 6)", default = 6)
     ap.add_argument("-s", "--square_size", type = float, default = 0.029, help = "Length of one edge (in metres)")
-    ap.add_argument("-v", "--visualize", type = str, default = "True", help = "To visualize each checkerboard image")
+    ap.add_argument("-v", "--visualize", type = str, default = "False", help = "To visualize each checkerboard image")
     
     # Retrieve all the Arguments parameters
     args = vars(ap.parse_args())
