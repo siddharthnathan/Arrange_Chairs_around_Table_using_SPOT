@@ -61,7 +61,11 @@ def resize_frame(frame, width):
 def get_object_with_aruco_tag(aruco_id):
 
 	# Define the Objects with their AruCo IDs
-	objects_with_aruco_ids = [{'ID': 24, 'Name': 'AruCo_on_Chair'}, {'ID': 19, 'Name': 'AruCo_on_SPOT'}]
+	objects_with_aruco_ids = [
+								{'ID': 4, 'Name': 'Main_Origin'}, 
+						   		{'ID': 2, 'Name': 'Secondary_Origin'}, 
+								{'ID': 5, 'Name': 'Chair'}
+							 ]
 
 	# For every Object in List
 	for object in objects_with_aruco_ids:
@@ -73,22 +77,6 @@ def get_object_with_aruco_tag(aruco_id):
 			return object['Name']
 	
 
-# Define a Function to define size of AruCo markers
-def get_size_of_aruco_tag(aruco_id):
-
-	# Define Size of AruCo markers in m
-	aruco_sizes = [{'ID': 24, 'Size': 7.75 * 2.5/100}, {'ID': 19, 'Size': 7 * 2.5/100}, {'ID': 32, 'Size': 0.1}]
-
-	# For every AruCo tag in sizes list
-	for aruco_size in aruco_sizes:
-
-		# Check if their IDs match
-		if int(aruco_size['ID']) == aruco_id:
-	
-			# Return the Aruco tag Dictionary
-			return aruco_size['Size']
-
-
 # Define a Function to convert Rotation vector to Rotation angles in degrees
 def convert_rotation_vector_to_angles(rotation_vector):
 	
@@ -96,6 +84,17 @@ def convert_rotation_vector_to_angles(rotation_vector):
 	rotation = R.from_rotvec(rotation_vector)
 
 	# Convert to Euler angles in degrees
+	euler_angles = rotation.as_euler('xyz', degrees = True)
+
+	# Return the rounded off angles
+	return round_float_list(euler_angles, 3)
+
+
+# Define a Function to convert Quartenion into Euler angles
+def convert_quartenion_to_angles(quartenion):
+
+	# Convert Quartenion into Euler angles
+	rotation = R.from_quat(quartenion)
 	euler_angles = rotation.as_euler('xyz', degrees = True)
 
 	# Return the rounded off angles
