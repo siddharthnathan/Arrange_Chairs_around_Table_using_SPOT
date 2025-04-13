@@ -1,4 +1,5 @@
 # Import Necessary Libraries
+from scipy.spatial.transform import Rotation as R
 import numpy as np
 import utils
 import time
@@ -141,7 +142,7 @@ class DetectFiducial(object):
 
                 # Get the Name of the AruCo tag in Environment
                 aruco_tag_wrt_spot_body_frame['Name'] = utils.get_object_with_aruco_tag(int(fiducial.apriltag_properties.frame_name_fiducial[-1]))
-
+                
                 # Get its Transformation wrt SPOT body frame
                 fiducial_wrt_spot_body = get_a_tform_b(
                     fiducial.transforms_snapshot, BODY_FRAME_NAME,
@@ -154,7 +155,7 @@ class DetectFiducial(object):
                 # Store Rotation angles of AruCo tag wrt SPOT body frame
                 quartenion = fiducial_wrt_spot_body.rotation
                 quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
-                aruco_tag_wrt_spot_body_frame['Rotation'] = utils.convert_quartenion_to_angles(quartenion)
+                aruco_tag_wrt_spot_body_frame['Rotation'] = self.convert_quartenion_to_angles(quartenion)
 
                 # Append into List of Fiducials detected
                 aruco_tags_wrt_spot_body_frame.append(aruco_tag_wrt_spot_body_frame)
@@ -177,3 +178,15 @@ class DetectFiducial(object):
         
         # Return none if no fiducials are found.
         return None
+    
+
+    # Define a Function to convert Quartenion into Euler angles
+    def convert_quartenion_to_angles(self, quartenion):
+
+        # Convert Quartenion into Euler angles
+        rotation = R.from_quat(quartenion)
+        euler_angles = rotation.as_euler('zyx', degrees = True)
+        euler_angles[2] += 90
+
+        # Return the rounded off angles
+        return utils.round_float_list(euler_angles, 3)[::-1]

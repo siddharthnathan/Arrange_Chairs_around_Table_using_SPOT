@@ -1,5 +1,4 @@
 # Import Necessary Libraries
-from scipy.spatial.transform import Rotation as R
 import numpy as np
 import cv2
 
@@ -75,27 +74,31 @@ def get_object_with_aruco_tag(aruco_id):
 
 			# Return the Obejct name
 			return object['Name']
+
+
+# Define a Function to Check if a AruCo tag data is in the List of Coordinate frame objects
+def is_aruco_detected(aruco_tags_data, aruco_tag_name): 
+
+	# For every AruCo tag Data
+	for aruco_tag_data in aruco_tags_data:
+
+		# If Name in AruCo tag data matches required Name, Return True
+		if aruco_tag_data.name == aruco_tag_name:
+			return True
 	
+	# If not found, return False
+	return False
 
-# Define a Function to convert Rotation vector to Rotation angles in degrees
-def convert_rotation_vector_to_angles(rotation_vector):
+
+# Define a Function to get AruCo tag data from the List of Coordinate frame objects
+def get_aruco_tag_data(aruco_tags_data, aruco_tag_name): 
+
+	# For every AruCo tag Data
+	for aruco_tag_data in aruco_tags_data:
+
+		# If Name in AruCo tag data matches required Name, Return Data
+		if aruco_tag_data.name == aruco_tag_name:
+			return aruco_tag_data
 	
-	# Convert rotation vector to a Rotation object
-	rotation = R.from_rotvec(rotation_vector)
-
-	# Convert to Euler angles in degrees
-	euler_angles = rotation.as_euler('xyz', degrees = True)
-
-	# Return the rounded off angles
-	return round_float_list(euler_angles, 3)
-
-
-# Define a Function to convert Quartenion into Euler angles
-def convert_quartenion_to_angles(quartenion):
-
-	# Convert Quartenion into Euler angles
-	rotation = R.from_quat(quartenion)
-	euler_angles = rotation.as_euler('xyz', degrees = True)
-
-	# Return the rounded off angles
-	return round_float_list(euler_angles, 3)
+	# If not found, return None
+	return None

@@ -1,4 +1,5 @@
 # Import Necessary Libraries
+from scipy.spatial.transform import Rotation as R
 import utils
 import cv2
 
@@ -43,7 +44,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
             # Store all Parameters into Dictionary
             aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))
             aruco_tag_pose['Translation'] = utils.round_float_list(list(tvecs[i][0]), 3)
-            aruco_tag_pose['Rotation'] = utils.convert_rotation_vector_to_angles(list(rvecs[i][0]))
+            aruco_tag_pose['Rotation'] = convert_rotation_vector_to_angles(list(rvecs[i][0]))
 
             # Draw Pose axes in the AruCo tag image
             cv2.aruco.drawDetectedMarkers(frame, corners)
@@ -58,3 +59,16 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
     # Else Return None
     else:
         return frame, None
+        
+
+# Define a Function to convert Rotation vector to Rotation angles in degrees
+def convert_rotation_vector_to_angles(rotation_vector):
+     
+    # Convert rotation vector to a Rotation object
+	rotation = R.from_rotvec(rotation_vector)
+     
+	# Convert to Euler angles in degrees
+	euler_angles = rotation.as_euler('zyx', degrees = True)
+
+	# Return the rounded off angles
+	return utils.round_float_list(euler_angles, 3)

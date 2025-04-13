@@ -8,9 +8,9 @@ import read_video_stream
 import pose_estimation
 import coordinate_transformations
 import utils
-import numpy as np
 
 # Import Necessary Libraries
+import numpy as np
 import time
 import cv2
 import os
@@ -40,7 +40,6 @@ aruco_type = cv2.aruco.DICT_APRILTAG_36h11
 
 # Read Camera Calibration parameters
 camera_calibration_params = utils.read_camera_calibration_params()
-
 '''
 # Configure and Stream Realsense Pipeline
 main_camera_pipeline = read_video_stream.configure_and_stream_pipeline()
@@ -61,22 +60,25 @@ try:
         # Get the Pose of AruCo tags in Main Camera frame
         image_with_aruco_poses, aruco_tags_data_wrt_camera_frame = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])
 
-        print("AruCo tags wrt World frame...")
-        print(aruco_tags_data_wrt_camera_frame)
+        # Detect the Fiducials in the Robot's environment
+        aruco_tags_data_wrt_spot_body_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
 
-        # Convert the Poses of AruCo tags from Camera frame to World frame
-        #aruco_tags_data_wrt_world_frame = coordinate_transformations.compute_aruco_tags_data_to_world_frame(aruco_tags_data_wrt_camera_frame)
+        # Create Object list for AruCo tags data in Main camera frame and SPOT frame
+        aruco_tags_data_wrt_camera_frame = coordinate_transformations.create_coordinate_frames(aruco_tags_data_wrt_camera_frame, 'Camera')
+        aruco_tags_data_wrt_spot_frame = coordinate_transformations.create_coordinate_frames(aruco_tags_data_wrt_spot_frame, 'SPOT')
 
-        # Copmute the Gripper pose to Grasp chair in World frame
-        #gripper_pose_to_grasp_chair_wrt_world_frame = coordinate_transformations.compute_gripper_pose_to_grasp_chair(aruco_tags_data_wrt_world_frame)
-        
+        # If Chair is Detected in Camera and SPOT frames
+        if utils.is_aruco_detected(aruco_tags_data_wrt_camera_frame, 'Chair') or utils.is_aruco_detected(aruco_tags_data_wrt_spot_frame, 'Chair'):
+            print("Y")
+
+        # If Chair is not Detected in Camera and SPOT frames
+        else:
+            print("Chair is Not detected in Camera & SPOT frames")
+
         # Display the Image from Main Camera
         cv2.imshow('Main_Camera', image_with_aruco_poses)
         cv2.waitKey(1)
-
-        # Detect the Fiducials in the Robot's environment
-        aruco_tags_data_wrt_spot_body_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-        print(aruco_tags_data_wrt_spot_body_frame)
+        time.sleep(5)
 
         # Quit when Q key is Pressed
         if cv2.waitKey(1) == ord('q'):
@@ -86,18 +88,46 @@ try:
 finally:
     main_camera_pipeline.stop()
 
-'''
 
+'''
 # Read Image frames from Pipelines
 main_camera_frame = cv2.imread('scene.jpg')
         
 # Get the Pose of AruCo tags in Main Camera frame
 image_with_aruco_poses, aruco_tags_data_wrt_camera_frame = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])
-print(aruco_tags_data_wrt_camera_frame)
-print('\n')
     
-detected_fiducials = [{'Name': 'Main_Origin', 'Translation': [-4.104, -0.595, 0.369], 'Rotation': [169.941, -73.369, 14.078]}, {'Name': 'Secondary_Origin', 'Translation': [0.571, -1.466, 0.288], 'Rotation': [151.621, -88.788, 135.619]}]
-print(detected_fiducials)
+aruco_tags_data_wrt_spot_frame = [{'Name': 'Main_Origin', 'Translation': [-3.799, -1.197, 0.341], 'Rotation': [24.448, 78.03, -115.392]}, 
+                      {'Name': 'Secondary_Origin', 'Translation': [0.83, -1.929, 0.296], 'Rotation': [2.144, -18.248, -89.994]}]
+
+# Create Object list for AruCo tags data in Main camera frame and SPOT frame
+aruco_tags_data_wrt_camera_frame = coordinate_transformations.create_coordinate_frames(aruco_tags_data_wrt_camera_frame, 'Camera')
+aruco_tags_data_wrt_spot_frame = coordinate_transformations.create_coordinate_frames(aruco_tags_data_wrt_spot_frame, 'SPOT')
+
+# Define Main Origin Pose wrt Camera frame
+main_origin_pose_wrt_camera_frame = utils.get_aruco_tag_data(aruco_tags_data_wrt_camera_frame, 'Main_Origin')
+
+# Define Secondary Origin Pose wrt Camera frame
+secondary_origin_pose_wrt_camera_frame = utils.get_aruco_tag_data(aruco_tags_data_wrt_camera_frame, 'Secondary_Origin')
+
+# If Chair is Detected in Camera and SPOT frames
+if utils.is_aruco_detected(aruco_tags_data_wrt_camera_frame, 'Chair') or utils.is_aruco_detected(aruco_tags_data_wrt_spot_frame, 'Chair'):
+
+    # If Chair is detected by SPOT
+    if utils.is_aruco_detected(aruco_tags_data_wrt_spot_frame, 'Chair'):
+
+        # Get the Pose of AruCo on Chair wrt SPOT body frame
+        chair_aruco_pose_wrt_spot_frame = utils.get_aruco_tag_data(aruco_tags_data_wrt_spot_frame, 'Chair')
+    
+    # Else when Chair is not detected by SPOT and only Camera
+    else:
+
+        # Compute the Pose of AruCo on Chair wrt SPOT body frame
+        chair_aruco_pose_wrt_spot_frame = coordinate_transformations.compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_frame)
+        print(chair_aruco_pose_wrt_spot_frame)
+
+# If Chair is not Detected in Camera and SPOT frames
+else:
+    print("Chair is Not detected in Camera & SPOT frames")
 
 cv2.imshow('Main_Camera', image_with_aruco_poses)
 cv2.waitKey(0)
