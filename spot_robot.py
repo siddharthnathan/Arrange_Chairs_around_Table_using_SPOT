@@ -148,14 +148,14 @@ class DetectFiducial(object):
                     fiducial.transforms_snapshot, BODY_FRAME_NAME,
                     fiducial.apriltag_properties.frame_name_fiducial).to_proto()
                 
-                # Store Translation vector of AruCo tag wrt SPOT body frame
-                position = fiducial_wrt_spot_body.position
-                aruco_tag_wrt_spot_body_frame['Translation'] = utils.round_float_list([position.x, position.y, position.z], 3)
-
-                # Store Rotation angles of AruCo tag wrt SPOT body frame
+                # Get the Translation vector & Rotation quartenion of AruCo tag wrt SPOT body frame
+                translation = fiducial_wrt_spot_body.position
+                translation = [translation.x, translation.y, translation.z]
                 quartenion = fiducial_wrt_spot_body.rotation
                 quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
-                aruco_tag_wrt_spot_body_frame['Rotation'] = self.convert_quartenion_to_angles(quartenion)
+
+                # Store the Pose of AruCo tag wrt SPOT Body frame
+                aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_quartenion(translation, quartenion)
 
                 # Append into List of Fiducials detected
                 aruco_tags_wrt_spot_body_frame.append(aruco_tag_wrt_spot_body_frame)
