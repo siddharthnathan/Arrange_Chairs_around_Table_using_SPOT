@@ -77,7 +77,7 @@ def get_object_with_aruco_tag(aruco_id):
 			return object['Name']
 
 
-# Define a Function to Calculate Pose from Translation and Rotation vectors
+# Define a Function to Calculate Pose from Translation and Rotation angles
 def compute_pose_from_vectors(translation, rotation):
 
 	# Initialise Transformation matrix
@@ -113,7 +113,7 @@ def get_pose_of_aruco_tag(aruco_tags_data, aruco_tag_name):
 		if aruco_tag_data['Name'] == aruco_tag_name:
 
 			# Return the Pose of AruCo tag
-			return aruco_tag_data['Pose']
+			return np.array(aruco_tag_data['Pose'])
 	
 	# Return None if AruCo tag not found
 	return None

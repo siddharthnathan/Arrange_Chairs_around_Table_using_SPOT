@@ -3,6 +3,15 @@ import numpy as np
 import utils
 
 
+# Define the Pose of Grasp location wrt AruCo on Chair
+pose_of_grasp_location_wrt_aruco_on_chair = np.array([
+                                                        [1, 0, 0, -0.23],
+                                                        [0, 1, 0, 0.1],
+                                                        [0, 0, 1, 0.43],
+                                                        [0, 0, 0, 1]
+                                                    ])
+
+
 # Define a Function to Compute Pose of AruCo on chair wrt SPOT frame
 def compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_frame):
 
@@ -40,3 +49,12 @@ def compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_dat
 
     # Return the Pose of AruCo on chair wrt SPOT frame
     return chair_aruco_pose_wrt_spot_frame
+
+
+# Define a Function to Compute the Final Grasp pose of Chair wrt SPOT's gripper
+def compute_final_grasp_pose(chair_aruco_pose_wrt_spot_frame):
+
+    # Compute the Pose of Chair grasp location wrt SPOT body frame
+    chair_grasp_location_wrt_spot_body_frame = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair
+
+    return chair_grasp_location_wrt_spot_body_frame
