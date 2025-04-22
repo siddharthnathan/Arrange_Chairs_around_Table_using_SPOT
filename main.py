@@ -1,7 +1,6 @@
 # Import Necessary SPOT Scripts
-from spot_robot import make_SPOT_stand, move_arm_to_location
+from spot_robot import setup_and_configure_robot, make_SPOT_stand, move_arm_to_location
 from spot_robot import DetectFiducial
-import bosdyn
 
 # Import Necessary Scripts
 import read_video_stream
@@ -10,29 +9,8 @@ import coordinate_transformations
 import utils
 
 # Import Necessary Libraries
-import numpy as np
 import time
 import cv2
-import os
-
-
-# Define a Function to Setup and Configure SPOT Robot
-def setup_and_configure_robot():
-
-    # Define the SPOT Robot Credentials
-    os.environ['BOSDYN_CLIENT_USERNAME'] = "admin"
-    os.environ['BOSDYN_CLIENT_PASSWORD'] = "pvwmr4j08osj"
-    robot_ip = "192.168.80.3"
-
-    # Setup Configurations for SPOT
-    bosdyn.client.util.setup_logging(False)
-    sdk = bosdyn.client.create_standard_sdk('GraspChair')
-    robot = sdk.create_robot(robot_ip)
-    bosdyn.client.util.authenticate(robot)
-    robot.time_sync.wait_for_sync()
-
-    # Return the Robot object
-    return robot
 
 
 # Define the type of AruCo marker used in Environment
@@ -74,10 +52,10 @@ try:
             if pose_of_aruco_on_chair_wrt_spot_frame is None:
 
                 # Compute the Grasp Pose of Chair wrt SPOT body frame
-                grasp_pose_wrt_spot = coordinate_transformations.compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_body_frame)
+                grasp_pose_wrt_spot = coordinate_transformations.compute_grasp_pose_of_chair(robot, aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_body_frame)
 
                 # Move Arm to Grasp chair
-                move_arm_to_location(robot, grasp_pose_wrt_spot)
+                #move_arm_to_location(robot, grasp_pose_wrt_spot)
             
         # If Chair is not Detected in Camera and SPOT frames
         else:

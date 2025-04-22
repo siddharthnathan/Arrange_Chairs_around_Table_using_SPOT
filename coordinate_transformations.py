@@ -1,4 +1,5 @@
 # Import Necessary Libraries
+from spot_robot import get_transformation_of_grav_aligned_body_frame
 import numpy as np
 import utils
 
@@ -12,8 +13,8 @@ pose_of_grasp_location_wrt_aruco_on_chair = np.array([
                                                     ])
 
 
-# Define a Function to Compute Pose of AruCo on chair wrt SPOT frame
-def compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_frame):
+# Define a Function to Compute Grasp Pose of Chair wrt SPOT body frame
+def compute_grasp_pose_of_chair(robot, aruco_tags_data_wrt_camera_frame, aruco_tags_data_wrt_spot_frame):
 
     # Get the Pose of AruCo on chair wrt Camera frame
     chair_aruco_pose_wrt_camera_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_frame, 'Chair')
@@ -47,8 +48,22 @@ def compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_dat
     # Compute the Pose of AruCo on chair wrt SPOT body frame
     chair_aruco_pose_wrt_spot_frame = np.linalg.inv(pose_of_spot_wrt_camera) @ chair_aruco_pose_wrt_camera_frame
 
+    # Compute the Pose of AruCo on chair wrt SPOT gravity aligned body frame
+    grav_aligned_body_frame = get_transformation_of_grav_aligned_body_frame(robot)
+    chair_aruco_pose_wrt_spot_frame = np.linalg.inv(grav_aligned_body_frame) @ chair_aruco_pose_wrt_spot_frame
+
     # Compute the Grasp pose of Chair wrt SPOT
     grasp_pose_wrt_spot = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair
+
+    # Convert the Grasp pose to SPOT Body frame
+    grasp_pose_wrt_spot = grasp_pose_wrt_spot @ np.array([
+                                                            [0, 0, 1, 0],
+                                                            [0, 1, 0, 0],
+                                                            [-1, 0, 0, 0],
+                                                            [0, 0, 0, 1]
+                                                         ])
+    
+    print(grasp_pose_wrt_spot)
 
     # Return the Grasp Pose of Chair wrt SPOT frame
     return grasp_pose_wrt_spot

@@ -1,11 +1,12 @@
 # Import Necessary Libraries
 import utils
 import time
+import os
 
 # Import Necessary Bosdyn Libraries
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, block_until_arm_arrives
 from bosdyn.api import geometry_pb2, image_pb2, world_object_pb2
-from bosdyn.client.frame_helpers import (GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
+from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
 from bosdyn.client import RpcError, create_standard_sdk
 from bosdyn.client.world_object import WorldObjectClient
 from bosdyn.client.robot_state import RobotStateClient
@@ -14,7 +15,27 @@ from bosdyn.client.image import ImageClient
 from bosdyn.client.power import PowerClient
 from bosdyn.client import math_helpers
 import bosdyn.client.lease
+import bosdyn.client.util
 import bosdyn.client
+
+
+# Define a Function to Setup and Configure SPOT Robot
+def setup_and_configure_robot():
+
+    # Define the SPOT Robot Credentials
+    os.environ['BOSDYN_CLIENT_USERNAME'] = "admin"
+    os.environ['BOSDYN_CLIENT_PASSWORD'] = "pvwmr4j08osj"
+    robot_ip = "192.168.80.3"
+
+    # Setup Configurations for SPOT
+    bosdyn.client.util.setup_logging(False)
+    sdk = bosdyn.client.create_standard_sdk('GraspChair')
+    robot = sdk.create_robot(robot_ip)
+    bosdyn.client.util.authenticate(robot)
+    robot.time_sync.wait_for_sync()
+
+    # Return the Robot object
+    return robot
 
 
 # Define a Function to Power on SPOT and make it Stand
@@ -128,7 +149,7 @@ class DetectFiducial(object):
                 
                 # Get its Transformation wrt SPOT body frame
                 fiducial_wrt_spot_body = get_a_tform_b(
-                    fiducial.transforms_snapshot, GRAV_ALIGNED_BODY_FRAME_NAME,
+                    fiducial.transforms_snapshot, BODY_FRAME_NAME,
                     fiducial.apriltag_properties.frame_name_fiducial).to_proto()
 
                 # Store the Pose of AruCo tag wrt SPOT Body frame
@@ -156,6 +177,22 @@ class DetectFiducial(object):
         # Return none if no fiducials are found.
         return None
     
+
+# Define a Function to Get Transformation of Gravity aligned body frame wrt Body frame
+def get_transformation_of_grav_aligned_body_frame(robot):
+
+    # Create required Robot clients
+    robot_state_client = robot.ensure_client(RobotStateClient.default_service_name)
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+
+        # Get Transformation of Gravity aligned body frame wrt Body frame
+        robot_state = robot_state_client.get_robot_state()
+        grav_aligned_body_frame = get_a_tform_b(robot_state.kinematic_state.transforms_snapshot, BODY_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME)
+        return grav_aligned_body_frame
+
 
 # Define a Function to Move Robot gripper to given Location
 def move_arm_to_location(robot, pose):
