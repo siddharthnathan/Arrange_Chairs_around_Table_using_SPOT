@@ -47,14 +47,8 @@ def compute_chair_pose_wrt_spot(aruco_tags_data_wrt_camera_frame, aruco_tags_dat
     # Compute the Pose of AruCo on chair wrt SPOT body frame
     chair_aruco_pose_wrt_spot_frame = np.linalg.inv(pose_of_spot_wrt_camera) @ chair_aruco_pose_wrt_camera_frame
 
-    # Return the Pose of AruCo on chair wrt SPOT frame
-    return chair_aruco_pose_wrt_spot_frame
+    # Compute the Grasp pose of Chair wrt SPOT
+    grasp_pose_wrt_spot = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair
 
-
-# Define a Function to Compute the Final Grasp pose of Chair wrt SPOT's gripper
-def compute_final_grasp_pose(chair_aruco_pose_wrt_spot_frame):
-
-    # Compute the Pose of Chair grasp location wrt SPOT body frame
-    chair_grasp_location_wrt_spot_body_frame = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair
-
-    return chair_grasp_location_wrt_spot_body_frame
+    # Return the Grasp Pose of Chair wrt SPOT frame
+    return grasp_pose_wrt_spot

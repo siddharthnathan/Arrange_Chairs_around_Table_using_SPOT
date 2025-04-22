@@ -90,11 +90,17 @@ def compute_pose_from_vectors(translation, rotation):
 	return round_matrix_list(transformation_matrix, 3)
 
 
-# Define a Function to Calculate Pose from Translation vector and Rotation quartenion
-def compute_pose_from_quartenion(translation, quartenion):
+# Define a Function to Calculate Pose from SPOT Data
+def compute_pose_from_spot_data(spot_data):
 
 	# Initialise Transformation matrix
 	transformation_matrix = np.zeros((4, 4))
+
+	# Get the Translation vector & Rotation quartenion
+	translation = spot_data.position
+	translation = [translation.x, translation.y, translation.z]
+	quartenion = spot_data.rotation
+	quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
 
 	# Frame and Return Transformation matrix
 	transformation_matrix[:3, 3] = np.array(translation).T
@@ -117,3 +123,21 @@ def get_pose_of_aruco_tag(aruco_tags_data, aruco_tag_name):
 	
 	# Return None if AruCo tag not found
 	return None
+
+
+# Define a Function to Get Translation and Rotation Quartenion from Pose
+def get_translation_and_quartenion_from_pose(pose):
+
+	# Round off Pose matrix
+	pose = round_matrix_list(pose, 3)
+
+	# Get Translation vector
+	translation = pose[:3, 3]
+
+	# Get Quartenion
+	rotation_matrix = pose[:3, :3]
+	rotation = R.from_matrix(rotation_matrix)
+	quaternion = rotation.as_quat()
+
+	# Return Translation and Quartenion
+	return translation, quaternion

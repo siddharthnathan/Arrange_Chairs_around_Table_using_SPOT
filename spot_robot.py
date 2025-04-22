@@ -1,25 +1,19 @@
 # Import Necessary Libraries
-from scipy.spatial.transform import Rotation as R
-import numpy as np
 import utils
 import time
-import cv2
-import os
 
 # Import Necessary Bosdyn Libraries
-from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
-from bosdyn.api import geometry_pb2, image_pb2, manipulation_api_pb2, world_object_pb2
-from bosdyn.client.manipulation_api_client import ManipulationApiClient
-from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, get_a_tform_b)
+from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, block_until_arm_arrives
+from bosdyn.api import geometry_pb2, image_pb2, world_object_pb2
+from bosdyn.client.frame_helpers import (GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
 from bosdyn.client import RpcError, create_standard_sdk
 from bosdyn.client.world_object import WorldObjectClient
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.client.robot_id import RobotIdClient
 from bosdyn.client.image import ImageClient
-from bosdyn.client.lease import LeaseClient
 from bosdyn.client.power import PowerClient
+from bosdyn.client import math_helpers
 import bosdyn.client.lease
-import bosdyn.client.util
 import bosdyn.client
 
 
@@ -46,6 +40,7 @@ def make_SPOT_stand(robot):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         blocking_stand(command_client, timeout_sec = 10)
         robot.logger.info('SPOT Standing')
+        time.sleep(5)
 
 
 # Define a Class to Detect Fiducials with SPOT robot
@@ -69,18 +64,6 @@ class DetectFiducial(object):
 
         # Indicator for if motor power is on
         self._powered_on = False
-
-        # Camera intrinsics for the current camera source being analyzed
-        self._intrinsics = None
-
-        # Transform from the robot's camera frame to the baselink frame
-        self._camera_tform_body = None
-
-        # Transform from the robot's baselink to the world frame
-        self._body_tform_world = None
-
-        # Latest detected fiducial's position in the world
-        self._current_tag_world_pose = np.array([])
 
         # Dictionary mapping camera source to it's latest image taken
         self._image = dict()
@@ -145,17 +128,11 @@ class DetectFiducial(object):
                 
                 # Get its Transformation wrt SPOT body frame
                 fiducial_wrt_spot_body = get_a_tform_b(
-                    fiducial.transforms_snapshot, BODY_FRAME_NAME,
+                    fiducial.transforms_snapshot, GRAV_ALIGNED_BODY_FRAME_NAME,
                     fiducial.apriltag_properties.frame_name_fiducial).to_proto()
-                
-                # Get the Translation vector & Rotation quartenion of AruCo tag wrt SPOT body frame
-                translation = fiducial_wrt_spot_body.position
-                translation = [translation.x, translation.y, translation.z]
-                quartenion = fiducial_wrt_spot_body.rotation
-                quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
 
                 # Store the Pose of AruCo tag wrt SPOT Body frame
-                aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_quartenion(translation, quartenion)
+                aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_spot_data(fiducial_wrt_spot_body)
 
                 # Append into List of Fiducials detected
                 aruco_tags_wrt_spot_body_frame.append(aruco_tag_wrt_spot_body_frame)
@@ -180,13 +157,61 @@ class DetectFiducial(object):
         return None
     
 
-    # Define a Function to convert Quartenion into Euler angles
-    def convert_quartenion_to_angles(self, quartenion):
+# Define a Function to Move Robot gripper to given Location
+def move_arm_to_location(robot, pose):
 
-        # Convert Quartenion into Euler angles
-        rotation = R.from_quat(quartenion)
-        euler_angles = rotation.as_euler('zyx', degrees = True)
-        euler_angles[2] += 90
+    # Verify the robot is not estopped and that an external application has registered and holds
+    # an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
+                                    'such as the estop SDK example, to configure E-Stop.'
 
-        # Return the rounded off angles
-        return utils.round_float_list(euler_angles, 3)[::-1]
+    # Create required Robot clients
+    robot_state_client = robot.ensure_client(RobotStateClient.default_service_name)
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+       
+        # Get Translation and Rotation quartenion from Pose
+        translation, quartenion = utils.get_translation_and_quartenion_from_pose(pose)
+
+        # Build a position to move the arm to (in meters, relative to and expressed in the gravity aligned body frame).
+        x, y, z = translation
+        hand_ewrt_flat_body = geometry_pb2.Vec3(x = x, y = y, z = z)
+
+        # Get Rotation as a quaternion
+        qx, qy, qz, qw = quartenion
+        flat_body_Q_hand = geometry_pb2.Quaternion(w = qw, x = qx, y = qy, z = qz)
+        
+        # Frame the Pose
+        flat_body_T_hand = geometry_pb2.SE3Pose(position = hand_ewrt_flat_body, rotation = flat_body_Q_hand)
+
+        # Get Transformation from ODOM frame to Gravity aligneed Body frame
+        robot_state = robot_state_client.get_robot_state()
+        odom_T_flat_body = get_a_tform_b(robot_state.kinematic_state.transforms_snapshot, ODOM_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME)
+
+        # Frame the Final pose
+        odom_T_hand = odom_T_flat_body * math_helpers.SE3Pose.from_proto(flat_body_T_hand)
+
+        # Duration in seconds
+        seconds = 2
+
+        # Define the Arm Command
+        arm_command = RobotCommandBuilder.arm_pose_command(
+            odom_T_hand.x, odom_T_hand.y, odom_T_hand.z, odom_T_hand.rot.w, odom_T_hand.rot.x,
+            odom_T_hand.rot.y, odom_T_hand.rot.z, ODOM_FRAME_NAME, seconds)
+
+        # Make the open gripper RobotCommand
+        gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
+
+        # Combine the arm and gripper commands into one RobotCommand
+        command = RobotCommandBuilder.build_synchro_command(gripper_command, arm_command)
+
+        # Send the request
+        cmd_id = command_client.robot_command(command)
+        robot.logger.info('Moving arm to Grasp Chair')
+        
+        # Wait until the arm arrives at the goal
+        block_until_arm_arrives(command_client, cmd_id)
+        robot.logger.info('Grasped Chair')

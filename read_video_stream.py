@@ -1,6 +1,7 @@
 # Import Necessary Libraries
 import pyrealsense2 as rs
 import numpy as np
+import time
 import cv2
 
 
@@ -45,6 +46,7 @@ def configure_and_stream_pipeline():
 def read_frames_from_pipelines(main_camera_pipeline):
 
     # Get Frames from Main camera
+    time.sleep(3)
     main_camera_frame = main_camera_pipeline.wait_for_frames()
     main_camera_frame = main_camera_frame.get_color_frame()
     main_camera_frame = np.asanyarray(main_camera_frame.get_data())
