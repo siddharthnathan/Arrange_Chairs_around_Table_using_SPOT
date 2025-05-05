@@ -31,8 +31,8 @@ def read_camera_calibration_params():
 	camera_calibration_params = {
 									'Main_Camera': 
 									{
-										'Calibration_matrix': np.load('Camera_Calibration/Main_Camera/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/Main_Camera/distortion_coefficients.npy'),
+										'Calibration_matrix': np.load('Camera_Calibration/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/distortion_coefficients.npy'),
 									},
 									'Side_Camera': 
 									{
@@ -77,7 +77,7 @@ def get_object_with_aruco_tag(aruco_id):
 			return object['Name']
 
 
-# Define a Function to Calculate Pose from Translation and Rotation angles
+# Define a Function to Calculate Pose from Translation and Rotation vector
 def compute_pose_from_vectors(translation, rotation):
 
 	# Initialise Transformation matrix
@@ -86,6 +86,19 @@ def compute_pose_from_vectors(translation, rotation):
 	# Frame and Return Transformation matrix
 	transformation_matrix[:3, 3] = np.array(translation).T
 	transformation_matrix[:3, :3] = cv2.Rodrigues(np.array(rotation))[0]
+	transformation_matrix[3, 3] = 1
+	return round_matrix_list(transformation_matrix, 3)
+
+
+# Define a Function to Calculate Pose from Translation and Rotation angles
+def compute_pose_from_angles(translation, rotation):
+
+	# Initialise Transformation matrix
+	transformation_matrix = np.zeros((4, 4))
+
+	# Frame and Return Transformation matrix
+	transformation_matrix[:3, 3] = np.array(translation).T
+	transformation_matrix[:3, :3] = R.from_euler('xyz', rotation, degrees = True).as_matrix()
 	transformation_matrix[3, 3] = 1
 	return round_matrix_list(transformation_matrix, 3)
 
@@ -141,3 +154,21 @@ def get_translation_and_quartenion_from_pose(pose):
 
 	# Return Translation and Quartenion
 	return translation, quaternion
+
+
+# Define a Function to Get Translation and Rotation angles from Pose
+def get_translation_and_rotation_from_pose(pose):
+
+	# Round off Pose matrix
+	pose = round_matrix_list(pose, 3)
+
+	# Get Translation vector
+	translation = pose[:3, 3]
+
+	# Get Quartenion
+	rotation_matrix = pose[:3, :3]
+	rotation = R.from_matrix(rotation_matrix)
+	euler_angles = rotation.as_euler('xyz', degrees=True)
+
+	# Return Translation and Rotation angles
+	return translation, euler_angles

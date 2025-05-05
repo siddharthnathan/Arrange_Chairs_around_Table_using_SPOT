@@ -46,10 +46,11 @@ def configure_and_stream_pipeline():
 def read_frames_from_pipelines(main_camera_pipeline):
 
     # Get Frames from Main camera
-    time.sleep(3)
-    main_camera_frame = main_camera_pipeline.wait_for_frames()
-    main_camera_frame = main_camera_frame.get_color_frame()
-    main_camera_frame = np.asanyarray(main_camera_frame.get_data())
+    for i in range(5):
+        main_camera_frame = main_camera_pipeline.wait_for_frames()
+        main_camera_frame = main_camera_frame.get_color_frame()
+        main_camera_frame = np.asanyarray(main_camera_frame.get_data())
+        time.sleep(1)
 
     # Display the images
     cv2.imshow('Main_Camera', main_camera_frame)

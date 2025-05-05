@@ -60,9 +60,9 @@ if __name__ == '__main__':
     # Define the Argument parser and its arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--dir", required = True, help = "Path to folder containing checkerboard images for calibration")
-    ap.add_argument("-w", "--width", type = int, help = "Width of checkerboard (default = 8)",  default = 8)
-    ap.add_argument("-t", "--height", type= int, help = "Height of checkerboard (default = 6)", default = 6)
-    ap.add_argument("-s", "--square_size", type = float, default = 0.029, help = "Length of one edge (in metres)")
+    ap.add_argument("-w", "--width", type = int, help = "Width of checkerboard (default = 2)",  default = 5)
+    ap.add_argument("-t", "--height", type= int, help = "Height of checkerboard (default = 1)", default = 3)
+    ap.add_argument("-s", "--square_size", type = float, default = 0.043, help = "Length of one edge (in metres)")
     ap.add_argument("-v", "--visualize", type = str, default = "False", help = "To visualize each checkerboard image")
     
     # Retrieve all the Arguments parameters
