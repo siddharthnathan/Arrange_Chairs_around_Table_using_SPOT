@@ -2,7 +2,6 @@
 import numpy as np
 import utils
 import time
-import math
 import os
 
 # Import Necessary Bosdyn Libraries
@@ -54,13 +53,11 @@ def make_SPOT_stand(robot):
         robot.logger.info('Powering on SPOT...')
         robot.power_on(timeout_sec = 20)
         assert robot.is_powered_on(), 'SPOT Power on Failed.'
-        robot.logger.info('SPOT Powered on')
 
         # Command SPOT to Stand
         robot.logger.info('Commanding SPOT to Stand...')
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         blocking_stand(command_client, timeout_sec = 10)
-        robot.logger.info('SPOT Standing')
         time.sleep(1)
 
 
@@ -275,11 +272,13 @@ def spot_move_right(robot, distance):
         # Create a Command Client
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
 
-        # Define the Command to go Right
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -distance, v_rot = 0.0)
-
         # Send the Command request to Command Client
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        try:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -distance, v_rot = 0.0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        except:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -1, v_rot = 0.0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         time.sleep(5)
     
 
@@ -299,10 +298,12 @@ def spot_move_left(robot, distance):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         
         # Define the Command to go Left
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = distance, v_rot = 0.0)
-        
-        # Send the Command request to Command Client
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        try:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = distance, v_rot = 0.0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        except:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = 1, v_rot = 0.0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         time.sleep(5)
         
         
@@ -322,10 +323,12 @@ def spot_move_front(robot, distance):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         
         # Define the Command to go Front
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = distance, v_y = 0, v_rot = 0)
-        
-        # Send the Command request to Command Client
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        try:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = distance, v_y = 0, v_rot = 0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        except:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 1, v_y = 0, v_rot = 0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         time.sleep(5) 
 
 
@@ -345,10 +348,12 @@ def spot_move_back(robot, distance):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         
         # Define the Command to go Back
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -distance, v_y = 0, v_rot = 0)
-        
-        # Send the Command request to Command Client
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        try:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -distance, v_y = 0, v_rot = 0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        except:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -1, v_y = 0, v_rot = 0)
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         time.sleep(5)     
 
 
@@ -368,10 +373,12 @@ def spot_rotate(robot, angle):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         
         # Define the Command to go Front
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.0, v_y = 0, v_rot = np.deg2rad(angle))
-        
-        # Send the Command request to Command Client
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        try:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.0, v_y = 0, v_rot = np.deg2rad(angle))
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        except:
+            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.0, v_y = 0, v_rot = np.deg2rad(30))
+            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         robot.logger.info('Rotating SPOT')
         time.sleep(5)
         
@@ -387,7 +394,7 @@ def align_spot_to_grasp_zone(robot, chair_grasp_pose_wrt_spot):
     rx, ry, rz = rotation
 
     # Check if SPOT is in Grasp zone
-    if rz > -5 and rz < 5 and x > 0.5 and x < 2 and y > -0.5 and y < 0.5:
+    if rz > -5 and rz < 5 and x > 1 and x < 1.5 and y > -0.5 and y < 0.5:
         print("SPOT is aligned already")
         align_spot = False
     

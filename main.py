@@ -1,5 +1,6 @@
 # Import Necessary SPOT Scripts
-from spot_robot import setup_and_configure_robot, make_SPOT_stand, align_spot_to_grasp_zone, move_arm_to_grasp_chair, spot_rotate
+from spot_robot import setup_and_configure_robot, make_SPOT_stand
+from spot_robot import align_spot_to_grasp_zone, move_arm_to_grasp_chair
 from spot_robot import DetectFiducial
 
 # Import Necessary Scripts
@@ -9,8 +10,6 @@ import coordinate_transformations
 import utils
 
 # Import Necessary Libraries
-import numpy as np
-import time
 import cv2
 
 
@@ -88,10 +87,6 @@ try:
             ch = input("Press G to begin Grasping: ")
             if ch == 'G':
                 continue
-        
-        # Else when Chair is not Grasped
-        else:
-            continue
         
         # Quit when Q key is Pressed
         if cv2.waitKey(1) == ord('q'):

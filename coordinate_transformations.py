@@ -38,16 +38,13 @@ def account_for_offset(grasp_pose_wrt_spot, offset):
 
         # Update Translation according to the Offsets in m
         translation[0] -= 0.3
-        translation[1] += 0.1
+        translation[1] += 0
         translation[2] -= 0.1
 
         # Update Rotation according to the Offsets in degrees
         rotation[0] = 0
         rotation[1] = 0
         rotation[2] += 0
-    
-    print(translation)
-    print(rotation)
 
     # Update Pose accordingly and Return
     grasp_pose_wrt_spot = utils.compute_pose_from_angles(translation, rotation)
@@ -63,7 +60,6 @@ def compute_grasp_pose_of_chair(aruco_tags_data_wrt_camera_frame, aruco_tags_dat
     # Get the Pose of Main origin and Secondary origin wrt SPOT frame
     main_origin_pose_wrt_spot_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, 'Main_Origin')
     secondary_origin_pose_wrt_spot_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, 'Secondary_Origin')
-    print(main_origin_pose_wrt_spot_frame)
 
     # Get the Pose of Main origin and Secondary origin wrt Camera frame
     main_origin_pose_wrt_camera_frame = np.array([
