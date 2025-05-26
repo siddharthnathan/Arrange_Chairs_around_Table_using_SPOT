@@ -174,10 +174,38 @@ class DetectFiducial(object):
         
         # Return none if no fiducials are found.
         return None
+
+
+# Define a Function to Open/Close Gripper of SPOT arm
+def open_or_close_gripper(robot, action):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
+                                    'such as the estop SDK example, to configure E-Stop.'
+
+    # Create required Robot clients
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+
+        # Make the open/close gripper RobotCommand
+        if action == 'open':
+            gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
+            robot.logger.info('Opening Gripper')
+        elif action == 'close':
+            gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(0.0)
+            robot.logger.info('Closing Gripper')
+        
+        # Send the Request
+        command = RobotCommandBuilder.build_synchro_command(gripper_command)
+        cmd_id = command_client.robot_command(command)
+        time.sleep(1)
     
 
-# Define a Function to Move Robot gripper to Grasp Chair
-def move_arm_to_grasp_chair(robot, pose):
+# Define a Function to Move SPOT arm to given Pose
+def move_arm_to_pose(robot, pose):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
     assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
@@ -223,67 +251,56 @@ def move_arm_to_grasp_chair(robot, pose):
 
         # Send the request
         move_command_id = command_client.robot_command(command)
-        robot.logger.info('Moving arm to position.')
+        robot.logger.info('Moving arm to given pose')
+        block_until_arm_arrives(command_client, move_command_id)
 
-        # Make the open gripper RobotCommand
-        gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
-        command = RobotCommandBuilder.build_synchro_command(gripper_command, arm_command)
-        robot.logger.info('Moving arm to Grasp Chair')
 
-        # Send the request and Wait until the arm arrives at the goal
-        cmd_id = command_client.robot_command(command)
-        block_until_arm_arrives(command_client, cmd_id)
+# Define a Function to Move arm to Default Pose
+def move_arm_to_default_pose(robot):
 
-        # Make the close gripper RobotCommand
-        gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(0.2)
-        command = RobotCommandBuilder.build_synchro_command(gripper_command)
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
+                                    'such as the estop SDK example, to configure E-Stop.'
 
-        # Send the request and Wait until the arm arrives at the goal
-        cmd_id = command_client.robot_command(command)
-        robot.logger.info('Grasped Chair')
-        time.sleep(2)
+    # Create required Robot clients
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
 
-        # Make the open gripper RobotCommand
-        gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
-        command = RobotCommandBuilder.build_synchro_command(gripper_command, arm_command)
-        cmd_id = command_client.robot_command(command)
-        time.sleep(1)
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
 
         # Bring the Arm back to Initial Configuration
         gripper_initial_config = RobotCommandBuilder.arm_stow_command()
         command = RobotCommandBuilder.build_synchro_command(gripper_initial_config)
-        cmd_id = command_client.robot_command(command)
-        block_until_arm_arrives(command_client, cmd_id)
-        return True
+
+        # Send the Request
+        move_command_id = command_client.robot_command(command)
+        robot.logger.info('Moving arm to default pose')
+        block_until_arm_arrives(command_client, move_command_id)
 
 
-# Define a Function to Make SPOT Robot move Right
-def spot_move_right(robot, distance):
+# Define a Function to Move Robot gripper to Grasp Chair
+def move_arm_to_grasp_chair(robot, pose):
 
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
+    # Open arm gripper first
+    open_or_close_gripper(robot, action = 'open')
 
-    # Define Clients to Read Images
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-    
-    # Until Lease is kept alive
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-        
-        # Create a Command Client
-        command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+    # Move arm gripper to given pose
+    move_arm_to_pose(robot, pose)
 
-        # Send the Command request to Command Client
-        try:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -distance, v_rot = 0.0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        except:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -1, v_rot = 0.0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        time.sleep(5)
-    
+    # Close arm gripper to grasp chair
+    open_or_close_gripper(robot, action = 'close')
 
-# Define a Function to Make SPOT Robot move Left
-def spot_move_left(robot, distance):
+    # Open arm gripper to retract
+    open_or_close_gripper(robot, action = 'open')
+
+    # Move arm back to default pose
+    move_arm_to_default_pose(robot)
+    return True
+
+
+# Define a Function to Make SPOT Robot move along a given direction
+def move_spot_along_direction(robot, distance, direction):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
     assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
@@ -296,66 +313,46 @@ def spot_move_left(robot, distance):
         
         # Create a Command Client
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-        
-        # Define the Command to go Left
-        try:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = distance, v_rot = 0.0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        except:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = 1, v_rot = 0.0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        time.sleep(5)
-        
-        
-# Define a Function to Make SPOT Robot move Front
-def spot_move_front(robot, distance):
 
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
-
-    # Define Clients to Read Images
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+        # Send the Command request to Command Client to Move SPOT Robot rightward
+        if direction == 'right':
+            try:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -distance, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+            except:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = -1, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        
+        # Send the Command request to Command Client to Move SPOT Robot leftward
+        elif direction == 'left':
+            try:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = distance, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+            except:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0, v_y = 1, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        
+        # Send the Command request to Command Client to Move SPOT Robot frontward
+        elif direction == 'front':
+            try:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = distance, v_y = 0, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+            except:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 1, v_y = 0, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        
+        # Send the Command request to Command Client to Move SPOT Robot backward
+        elif direction == 'back':
+            try:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -distance, v_y = 0, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+            except:
+                cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -1, v_y = 0, v_rot = 0.0)
+                command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+        
+        # Wait for 3 seconds
+        time.sleep(3)
     
-    # Until Lease is kept alive
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-        
-        # Create a Command Client
-        command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-        
-        # Define the Command to go Front
-        try:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = distance, v_y = 0, v_rot = 0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        except:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 1, v_y = 0, v_rot = 0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        time.sleep(5) 
-
-
-# Define a Function to Make SPOT Robot move Back
-def spot_move_back(robot, distance):
-
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
-
-    # Define Clients to Read Images
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-    
-    # Until Lease is kept alive
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-        
-        # Create a Command Client
-        command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-        
-        # Define the Command to go Back
-        try:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -distance, v_y = 0, v_rot = 0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        except:
-            cmd = RobotCommandBuilder.synchro_velocity_command(v_x = -1, v_y = 0, v_rot = 0)
-            command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-        time.sleep(5)     
-
 
 # Define a Function to Make SPOT Robot Rotate
 def spot_rotate(robot, angle):
@@ -372,7 +369,7 @@ def spot_rotate(robot, angle):
         # Create a Command Client
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         
-        # Define the Command to go Front
+        # Define the Command to Rotate SPOT Robot
         try:
             cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.0, v_y = 0, v_rot = np.deg2rad(angle))
             command_client.robot_command(cmd, end_time_secs = time.time() + 1)
@@ -415,11 +412,11 @@ def align_spot_to_grasp_zone(robot, chair_grasp_pose_wrt_spot):
         
         # Move SPOT TO Grasp Zone
         if abs(x) < abs(y):
-            spot_move_right(robot, distance = 1.5 - y)
-            spot_move_back(robot, distance = 1 - x)
+            move_spot_along_direction(robot, distance = 1.5 - y, direction = 'right')
+            move_spot_along_direction(robot, distance = 1 - x, direction = 'back')
         else:
-            spot_move_back(robot, distance = 1 - x)
-            spot_move_right(robot, distance = 1.5 - y)
+            move_spot_along_direction(robot, distance = 1 - x, direction = 'back')
+            move_spot_along_direction(robot, distance = 1.5 - y, direction = 'right')
     
     # Return the Aligned SPOT flag
     return align_spot
