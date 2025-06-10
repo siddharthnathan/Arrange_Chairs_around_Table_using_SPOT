@@ -36,11 +36,8 @@ try:
         main_camera_frame = read_video_stream.read_frames_from_pipelines(main_camera_pipeline)
             
         # Get the Pose of AruCo tags in Main Camera frame
-        image_with_aruco_poses, aruco_tags_data_wrt_camera_frame = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])        
-
-        # Display the Image from Main Camera
-        cv2.imshow('Main_Camera', image_with_aruco_poses)
-        cv2.waitKey(1)
+        image_with_aruco_tags_pose, aruco_tags_data_wrt_camera_frame = pose_estimation.get_pose_of_aruco_tags(main_camera_frame, aruco_type, camera_calibration_params['Main_Camera'])        
+        utils.display_image('Image', image_with_aruco_tags_pose)
 
         # Detect the Fiducials in the Robot's environment
         aruco_tags_data_wrt_spot_body_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()

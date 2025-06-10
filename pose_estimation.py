@@ -1,5 +1,4 @@
 # Import Necessary Libraries
-from scipy.spatial.transform import Rotation as R
 import numpy as np
 import utils
 import cv2
@@ -58,7 +57,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
 
             # Append Pose of AruCo tag into List
             poses_of_aruco_tags.append(aruco_tag_pose)
-        
+
         # Return Image and AruCo poses
         return frame, poses_of_aruco_tags
     

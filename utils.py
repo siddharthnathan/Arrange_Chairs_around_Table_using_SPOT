@@ -31,8 +31,8 @@ def read_camera_calibration_params():
 	camera_calibration_params = {
 									'Main_Camera': 
 									{
-										'Calibration_matrix': np.load('Camera_Calibration/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/distortion_coefficients.npy'),
+										'Calibration_matrix': np.load('Camera_Calibration/Main_Camera/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/Main_Camera/distortion_coefficients.npy'),
 									},
 									'Side_Camera': 
 									{
@@ -57,6 +57,12 @@ def resize_frame(frame, width):
 	return frame
 
 
+# Define a Function to Display Image
+def display_image(name, image):
+	cv2.imshow(name, image)
+	cv2.waitKey(1)
+
+
 # Define a Function to set Objects with Corresponding AruCo tags
 def get_object_with_aruco_tag(aruco_id):
 
@@ -64,7 +70,7 @@ def get_object_with_aruco_tag(aruco_id):
 	objects_with_aruco_ids = [
 								{'ID': 4, 'Name': 'Main_Origin'}, 
 						   		{'ID': 2, 'Name': 'Secondary_Origin'}, 
-								{'ID': 5, 'Name': 'Chair'}
+								{'ID': 6, 'Name': 'Chair'}
 							 ]
 
 	# For every Object in List

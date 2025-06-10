@@ -279,21 +279,48 @@ def move_arm_to_default_pose(robot):
         block_until_arm_arrives(command_client, move_command_id)
 
 
+# Define a Function to Move Gripper along X axis
+def move_arm_along_x_axis(robot, distance, direction):
+
+    # Initialise the Pose of Gripper
+    pose = np.identity(4)
+
+    # If Direction is Front
+    if direction == 'front':
+        pose[0][3] += distance
+    
+    # Else Direction is Back
+    else:
+        pose[0][3] -= distance
+    print(pose)
+    
+    # Move gripper along X axis
+    move_arm_to_pose(robot, pose)
+
+
 # Define a Function to Move Robot gripper to Grasp Chair
 def move_arm_to_grasp_chair(robot, pose):
 
     # Open arm gripper first
     open_or_close_gripper(robot, action = 'open')
 
-    # Move arm gripper to given pose
-    move_arm_to_pose(robot, pose)
+    # Move arm to Intermediate grasp pose
+    intermediate_pose = pose
+    intermediate_pose[0][3] -= 0.3
+    move_arm_to_pose(robot, intermediate_pose)
 
+    # Move Arm front to Grasp chair
+    move_arm_along_x_axis(robot, 0.3, direction = 'front')
+    '''
     # Close arm gripper to grasp chair
     open_or_close_gripper(robot, action = 'close')
 
     # Open arm gripper to retract
     open_or_close_gripper(robot, action = 'open')
 
+    # Move Arm back to Intermediate pose
+    move_arm_along_x_axis(robot, 0.3, direction = 'back')
+    '''
     # Move arm back to default pose
     move_arm_to_default_pose(robot)
     return True
@@ -377,7 +404,7 @@ def spot_rotate(robot, angle):
             cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.0, v_y = 0, v_rot = np.deg2rad(30))
             command_client.robot_command(cmd, end_time_secs = time.time() + 1)
         robot.logger.info('Rotating SPOT')
-        time.sleep(5)
+        time.sleep(3)
         
 
 # Define a Function to Align SPOT to Grasp zone
@@ -391,7 +418,7 @@ def align_spot_to_grasp_zone(robot, chair_grasp_pose_wrt_spot):
     rx, ry, rz = rotation
 
     # Check if SPOT is in Grasp zone
-    if rz > -5 and rz < 5 and x > 1 and x < 1.5 and y > -0.5 and y < 0.5:
+    if rz > -5 and rz < 5 and x > 1 and x < 1.5 and y > -0.3 and y < 0.3:
         print("SPOT is aligned already")
         align_spot = False
     
@@ -412,11 +439,11 @@ def align_spot_to_grasp_zone(robot, chair_grasp_pose_wrt_spot):
         
         # Move SPOT TO Grasp Zone
         if abs(x) < abs(y):
-            move_spot_along_direction(robot, distance = 1.5 - y, direction = 'right')
-            move_spot_along_direction(robot, distance = 1 - x, direction = 'back')
+            move_spot_along_direction(robot, distance = y, direction = 'left')
+            move_spot_along_direction(robot, distance = 1.25 - x, direction = 'back')
         else:
-            move_spot_along_direction(robot, distance = 1 - x, direction = 'back')
-            move_spot_along_direction(robot, distance = 1.5 - y, direction = 'right')
+            move_spot_along_direction(robot, distance = 1.25 - x, direction = 'back')
+            move_spot_along_direction(robot, distance = y, direction = 'left')
     
     # Return the Aligned SPOT flag
     return align_spot
