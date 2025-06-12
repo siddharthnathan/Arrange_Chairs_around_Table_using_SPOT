@@ -29,15 +29,15 @@ def read_camera_calibration_params():
 
 	# Read the Calibration parameters for both Cameras
 	camera_calibration_params = {
-									'Main_Camera': 
+									'Camera_1': 
 									{
-										'Calibration_matrix': np.load('Camera_Calibration/Main_Camera/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/Main_Camera/distortion_coefficients.npy'),
+										'Calibration_matrix': np.load('Camera_Calibration/Camera_1/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/Camera_1/distortion_coefficients.npy'),
 									},
-									'Side_Camera': 
+									'Camera_2': 
 									{
-										'Calibration_matrix': np.load('Camera_Calibration/Side_Camera/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/Side_Camera/distortion_coefficients.npy'),
+										'Calibration_matrix': np.load('Camera_Calibration/Camera_2/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/Camera_2/distortion_coefficients.npy'),
 									}
 								}
 	
@@ -70,7 +70,10 @@ def get_object_with_aruco_tag(aruco_id):
 	objects_with_aruco_ids = [
 								{'ID': 4, 'Name': 'Main_Origin'}, 
 						   		{'ID': 2, 'Name': 'Secondary_Origin'}, 
-								{'ID': 6, 'Name': 'Chair'}
+								{'ID': 1, 'Name': 'Origin'}, 
+								{'ID': 6, 'Name': 'Chair_1'},
+								{'ID': 7, 'Name': 'Chair_2'},
+								{'ID': 8, 'Name': 'Chair_3'}
 							 ]
 
 	# For every Object in List

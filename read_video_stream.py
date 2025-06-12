@@ -10,7 +10,7 @@ def configure_and_stream_pipeline():
 
     # Exit if the Number of Cameras are less than 2
     devices = rs.context().devices
-    if len(devices) < 1:
+    if len(devices) < 2:
         print("Not enough cameras connected.")
         exit()
     
@@ -36,24 +36,19 @@ def configure_and_stream_pipeline():
             pipelines.append(pipeline)
         
         # Extract Pipelines for Main camera and Side camera
-        main_camera_pipeline = pipelines[0]
+        camera_1_pipeline, camera_2_pipeline = pipelines
 
         # Return the Pipelines
-        return main_camera_pipeline
+        return camera_1_pipeline, camera_2_pipeline
 
 
 # Define a Function to Read Image frames from Pipelines
-def read_frames_from_pipelines(main_camera_pipeline):
+def read_frames_from_pipelines(camera_pipeline):
 
     # Get Frames from Main camera
-    for i in range(5):
-        main_camera_frame = main_camera_pipeline.wait_for_frames()
-        main_camera_frame = main_camera_frame.get_color_frame()
-        main_camera_frame = np.asanyarray(main_camera_frame.get_data())
-        time.sleep(1)
-
-    # Display the images
-    cv2.imshow('Main_Camera', main_camera_frame)
+    camera_frame = camera_pipeline.wait_for_frames()
+    camera_frame = camera_frame.get_color_frame()
+    camera_frame = np.asanyarray(camera_frame.get_data())
 
     # Return the Image frames
-    return main_camera_frame
+    return camera_frame

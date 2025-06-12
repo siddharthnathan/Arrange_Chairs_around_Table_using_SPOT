@@ -1,10 +1,16 @@
 # Import Necessary Libraries
 import pyrealsense2 as rs
 import numpy as np
+import sys
+import os
 
 
-# Get the Devices connected
+# Get the Device connected
 devices = rs.context().devices
+
+# Get the Input Camera name and Create directory
+camera = sys.argv[1]
+os.makedirs(camera, exist_ok = True)
 
 # For every Device connected
 for device in devices:
@@ -14,7 +20,8 @@ for device in devices:
     config = rs.config()
 
     # Enable the Camera streams
-    config.enable_device(device.get_info(rs.camera_info.serial_number))
+    camera_serial_number = device.get_info(rs.camera_info.serial_number)
+    config.enable_device(camera_serial_number)
     config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
     cfg = pipeline.start(config)
 
@@ -28,6 +35,10 @@ for device in devices:
     # Get distortion coefficients
     distortion_coeff = intrinsics.coeffs
 
-    # Save the Coefficients
-    np.save("Main_Camera/calibration_matrix", np.array(intrinsic_matrix))
-    np.save("Main_Camera/distortion_coefficients", np.array(distortion_coeff))
+    # Save the Calibration parameters
+    np.save(camera + "/calibration_matrix", np.array(intrinsic_matrix))
+    np.save(camera + "/distortion_coefficients", np.array(distortion_coeff))
+
+    # Write the Camera Serial number into Text file
+    with open(camera + "/serial_number.txt", "w") as file:
+        file.write(camera_serial_number)
