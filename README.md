@@ -1,2 +1,2 @@
-# Grasp_Chair_with_SPOT
+# Arrange_Chairs_around_Table_using_SPOT
  
