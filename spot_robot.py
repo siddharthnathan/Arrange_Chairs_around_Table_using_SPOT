@@ -279,50 +279,17 @@ def move_arm_to_default_pose(robot):
         block_until_arm_arrives(command_client, move_command_id)
 
 
-# Define a Function to Move Gripper along X axis
-def move_arm_along_x_axis(robot, distance, direction):
-
-    # Initialise the Pose of Gripper
-    pose = np.identity(4)
-
-    # If Direction is Front
-    if direction == 'front':
-        pose[0][3] += distance
-    
-    # Else Direction is Back
-    else:
-        pose[0][3] -= distance
-    print(pose)
-    
-    # Move gripper along X axis
-    move_arm_to_pose(robot, pose)
-
-
 # Define a Function to Move Robot gripper to Grasp Chair
 def move_arm_to_grasp_chair(robot, pose):
 
     # Open arm gripper first
     open_or_close_gripper(robot, action = 'open')
 
-    # Move arm to Intermediate grasp pose
-    intermediate_pose = pose
-    intermediate_pose[0][3] -= 0.3
-    move_arm_to_pose(robot, intermediate_pose)
-
-    # Move Arm front to Grasp chair
-    move_arm_along_x_axis(robot, 0.3, direction = 'front')
-    '''
+    # Move arm to Grasp pose
+    move_arm_to_pose(robot, pose)
+    
     # Close arm gripper to grasp chair
     open_or_close_gripper(robot, action = 'close')
-
-    # Open arm gripper to retract
-    open_or_close_gripper(robot, action = 'open')
-
-    # Move Arm back to Intermediate pose
-    move_arm_along_x_axis(robot, 0.3, direction = 'back')
-    '''
-    # Move arm back to default pose
-    move_arm_to_default_pose(robot)
     return True
 
 

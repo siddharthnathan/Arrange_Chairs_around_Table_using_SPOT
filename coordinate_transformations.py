@@ -4,13 +4,12 @@ import utils
 import math
 
 
-# Define the Pose of Grasp location wrt AruCo on Chair
-c, s = math.cos(np.deg2rad(5)), math.sin(np.deg2rad(5))
+# Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - down, Y - right)
 pose_of_grasp_location_wrt_aruco_on_chair = np.array([
-                                                        [ c,  0,  s, -0.2032],
-                                                        [ 0,  1,  0,  0.1016],
-                                                        [-s,  0,  c,  0.4318],
-                                                        [ 0,  0,  0,  1     ]
+                                                        [ 1,  0,  0, -0.3400],
+                                                        [ 0, -1,  0, -0.1000],
+                                                        [ 0,  0, -1, -0.0350],
+                                                        [ 0,  0,  0,  1.0000]
                                                     ])
 
 
@@ -24,27 +23,27 @@ def account_for_offset(grasp_pose_wrt_spot, offset):
     if offset == 'SPOT':
 
         # Update Translation according to the Offsets in m
-        translation[0] += 0.03
-        translation[1] += 0.01
-        translation[2] -= 0.27
+        translation[0] -= 0.08
+        translation[1] -= 0.10
+        translation[2] += 0.01
 
-        # Update Rotation according to the Offsets in degrees
+        # Update Rotation accordingly
         rotation[0] = 0
-        rotation[1] = 0
-        rotation[2] += 5
+        rotation[1] = 90
+        rotation[2] = 0
     
     # If Offset is due to SPOT
     elif offset == 'Camera':
 
         # Update Translation according to the Offsets in m
-        translation[0] -= 0.3
+        translation[0] += 0
         translation[1] += 0
-        translation[2] -= 0.1
+        translation[2] += 0
 
-        # Update Rotation according to the Offsets in degrees
+        # Update Rotation accordingly
         rotation[0] = 0
-        rotation[1] = 0
-        rotation[2] += 0
+        rotation[1] = 90
+        rotation[2] = 0
 
     # Update Pose accordingly and Return
     grasp_pose_wrt_spot = utils.compute_pose_from_angles(translation, rotation)
@@ -96,16 +95,8 @@ def compute_grasp_pose_of_chair(aruco_tags_data_wrt_camera_frame, aruco_tags_dat
 def compute_final_grasp_pose_of_chair(chair_aruco_pose_wrt_spot_frame, offset):
 
     # Compute the Grasp pose of Chair wrt SPOT
-    grasp_pose_wrt_spot = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair
+    grasp_pose_wrt_spot = chair_aruco_pose_wrt_spot_frame @ pose_of_grasp_location_wrt_aruco_on_chair   
 
-    # Convert the Grasp pose to SPOT Body frame
-    grasp_pose_wrt_spot = grasp_pose_wrt_spot @ np.array([
-                                                            [ 0,  0,  1,  0],
-                                                            [ 0,  1,  0,  0],
-                                                            [-1,  0,  0,  0],
-                                                            [ 0,  0,  0,  1]
-                                                         ])
-    
     # Account for Offset
     grasp_pose_wrt_spot = account_for_offset(grasp_pose_wrt_spot, offset)
 

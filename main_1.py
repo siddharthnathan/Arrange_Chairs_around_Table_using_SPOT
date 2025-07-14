@@ -8,7 +8,7 @@ import time
 import cv2
 
 
-################################################### CONFIGURATION ######################################################
+############################################################################################# CONFIGURATION ################################################################################
 
 # Define the type of AruCo marker used in Environment
 aruco_type = cv2.aruco.DICT_APRILTAG_36h11
@@ -20,7 +20,7 @@ camera_calibration_params = utils.read_camera_calibration_params()
 camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pipeline()
 time.sleep(1)
 
-################################################### INITIALISATION #####################################################
+############################################################################################# INITIALISATION ###############################################################################
 
 # Read the Image frames
 camera_1_frame = read_video_stream.read_frames_from_pipelines(camera_1_pipeline)
@@ -33,7 +33,7 @@ image_2_with_aruco_tags_pose, aruco_tags_data_wrt_camera_2_frame = pose_estimati
 # Get the Pose of both Cameras wrt Origin
 camera_1_pose, camera_2_pose = pose_estimation.get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
 
-################################################## MAIN PROGRAM #######################################################
+############################################################################################### MAIN PROGRAM ###############################################################################
 
 # Read Image frames from both the Cameras
 try:
