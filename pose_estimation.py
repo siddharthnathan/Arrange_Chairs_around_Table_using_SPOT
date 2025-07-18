@@ -5,7 +5,7 @@ import cv2
 
 
 # Define a Function to Get Pose of AruCo tag in Image frame
-def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
+def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
 
     # Extract Camera Matrix and Distortion coefficients
     matrix_coefficients, distortion_coefficients = camera_calibration_params['Calibration_matrix'], camera_calibration_params['Distortion_coefficients']
@@ -39,7 +39,7 @@ def get_pose_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
             aruco_tag_pose = {}
 
             # Compute the Pose of AruCo markers
-            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.19, matrix_coefficients, distortion_coefficients)
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.20, matrix_coefficients, distortion_coefficients)
    
             # Store all Parameters into Dictionary
             aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))                                                       # Name of AruCo tag

@@ -4,6 +4,20 @@ import numpy as np
 import cv2
 
 
+# Define the Objects with their AruCo IDs
+objects_with_aruco_ids = [
+							{'ID': 1, 'Name': 'Left_Wall_1'}, 
+							{'ID': 2, 'Name': 'Left_Wall_2'}, 
+							{'ID': 3, 'Name': 'Origin'}, 
+							{'ID': 4, 'Name': 'Right_Wall_2'}, 
+							{'ID': 5, 'Name': 'Right_Wall_1'}, 
+							{'ID': 6, 'Name': 'Chair_1'},
+							{'ID': 7, 'Name': 'Chair_2'},
+							{'ID': 8, 'Name': 'Chair_3'},
+							{'ID': 9, 'Name': 'Chair_4'}
+			 			]
+   
+
 # Define a Function to Round off values in a list
 def round_float_list(float_list, num_decimal_places):
     
@@ -24,57 +38,8 @@ def round_matrix_list(matrix_list, num_decimal_places):
 	return matrix_list
 
 
-# Define a Function to Read Camera Calibration parameters
-def read_camera_calibration_params():
-
-	# Read the Calibration parameters for both Cameras
-	camera_calibration_params = {
-									'Camera_1': 
-									{
-										'Calibration_matrix': np.load('Camera_Calibration/Camera_1/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/Camera_1/distortion_coefficients.npy'),
-									},
-									'Camera_2': 
-									{
-										'Calibration_matrix': np.load('Camera_Calibration/Camera_2/calibration_matrix.npy'),
-										'Distortion_coefficients': np.load('Camera_Calibration/Camera_2/distortion_coefficients.npy'),
-									}
-								}
-	
-	# Return the Camera Calibration parameters
-	return camera_calibration_params
-
-
-# Define a Function to Resize Image frame for given Width
-def resize_frame(frame, width):
-	
-	# Get the Shape of Image frame and maintain Aspect Ratio
-	h, w, _ = frame.shape
-	height = int(width * (h / w))
-
-	# Resize Image frame and Return 
-	frame = cv2.resize(frame, (width, height), interpolation = cv2.INTER_CUBIC)
-	return frame
-
-
-# Define a Function to Display Image
-def display_image(name, image):
-	cv2.imshow(name, image)
-	cv2.waitKey(1)
-
-
 # Define a Function to set Objects with Corresponding AruCo tags
 def get_object_with_aruco_tag(aruco_id):
-
-	# Define the Objects with their AruCo IDs
-	objects_with_aruco_ids = [
-								{'ID': 4, 'Name': 'Main_Origin'}, 
-						   		{'ID': 2, 'Name': 'Secondary_Origin'}, 
-								{'ID': 1, 'Name': 'Origin'}, 
-								{'ID': 6, 'Name': 'Chair_1'},
-								{'ID': 7, 'Name': 'Chair_2'},
-								{'ID': 8, 'Name': 'Chair_3'}
-							 ]
 
 	# For every Object in List
 	for object in objects_with_aruco_ids:

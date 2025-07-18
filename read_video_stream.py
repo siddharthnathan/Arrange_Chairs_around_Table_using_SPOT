@@ -39,16 +39,56 @@ def configure_and_stream_pipeline():
         camera_1_pipeline, camera_2_pipeline = pipelines
 
         # Return the Pipelines
+        time.sleep(1)
         return camera_1_pipeline, camera_2_pipeline
 
 
+# Define a Function to Read Camera Calibration parameters
+def read_camera_calibration_params():
+
+	# Read the Calibration parameters for both Cameras
+	camera_calibration_params = {
+									'Camera_1': 
+									{
+										'Calibration_matrix': np.load('Camera_Calibration/Camera_1/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/Camera_1/distortion_coefficients.npy'),
+									},
+									'Camera_2': 
+									{
+										'Calibration_matrix': np.load('Camera_Calibration/Camera_2/calibration_matrix.npy'),
+										'Distortion_coefficients': np.load('Camera_Calibration/Camera_2/distortion_coefficients.npy'),
+									}
+								}
+	
+	# Return the Camera Calibration parameters
+	return camera_calibration_params
+
+
 # Define a Function to Read Image frames from Pipelines
-def read_frames_from_pipelines(camera_pipeline):
+def read_frame_from_pipeline(camera_pipeline):
 
     # Get Frames from Main camera
     camera_frame = camera_pipeline.wait_for_frames()
     camera_frame = camera_frame.get_color_frame()
     camera_frame = np.asanyarray(camera_frame.get_data())
 
-    # Return the Image frames
+    # Return the Image frame
     return camera_frame
+
+
+# Define a Function to Resize Image frame for given Width
+def resize_frame(frame, width):
+	
+	# Get the Shape of Image frame and maintain Aspect Ratio
+	h, w, _ = frame.shape
+	height = int(width * (h / w))
+
+	# Resize Image frame and Return 
+	frame = cv2.resize(frame, (width, height), interpolation = cv2.INTER_CUBIC)
+	return frame
+
+
+# Define a Function to Display Image
+def display_image(name, image):
+	cv2.imshow(name, image)
+	cv2.waitKey(1)
