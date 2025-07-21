@@ -10,6 +10,9 @@ import cv2
 
 ############################################################################################# INITIALISATION ################################################################################
 
+# Initialise the Objects with their respective AruCo IDs and Poses
+objects_with_aruco_ids_and_poses = utils.initialise_objects_in_environment()
+
 # Define the type of AruCo marker used in Environment
 aruco_type = cv2.aruco.DICT_APRILTAG_36h11
 
@@ -28,7 +31,7 @@ _, aruco_tags_data_wrt_camera_1_frame = pose_estimation.get_poses_of_aruco_tags(
 _, aruco_tags_data_wrt_camera_2_frame = pose_estimation.get_poses_of_aruco_tags(camera_2_frame, aruco_type, camera_calibration_params['Camera_2'])
 
 # Calculate the Pose of both Cameras wrt Origin AruCo marker
-pose_of_camera_1, pose_of_camera_2 = pose_estimation.get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
+poses_of_cameras = pose_estimation.get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
 
 ############################################################################################### MAIN PROGRAM ###############################################################################
 

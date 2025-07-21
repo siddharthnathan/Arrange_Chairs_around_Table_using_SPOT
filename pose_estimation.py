@@ -79,4 +79,4 @@ def get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt
     camera_2_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3)
 
     # Return the Poses of Cameras wrt Origin
-    return camera_1_pose, camera_2_pose
+    return [camera_1_pose, camera_2_pose]

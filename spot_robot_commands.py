@@ -270,7 +270,7 @@ def move_robot_to_location(robot):
         # Create a Command Client
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
 
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 1, v_y = 0.5, v_rot = 1.57)
+        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.2, v_y = 0.1, v_rot = 1.57)
         command_client.robot_command(cmd, end_time_secs = time.time() + 2)
 
 

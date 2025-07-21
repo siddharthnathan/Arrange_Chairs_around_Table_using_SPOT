@@ -4,19 +4,21 @@ import numpy as np
 import cv2
 
 
-# Define the Objects with their AruCo IDs
-objects_with_aruco_ids = [
-							{'ID': 1, 'Name': 'Left_Wall_1'}, 
-							{'ID': 2, 'Name': 'Left_Wall_2'}, 
-							{'ID': 3, 'Name': 'Origin'}, 
-							{'ID': 4, 'Name': 'Right_Wall_2'}, 
-							{'ID': 5, 'Name': 'Right_Wall_1'}, 
-							{'ID': 6, 'Name': 'Chair_1'},
-							{'ID': 7, 'Name': 'Chair_2'},
-							{'ID': 8, 'Name': 'Chair_3'},
-							{'ID': 9, 'Name': 'Chair_4'}
-			 			]
-   
+# Define a Function to Initialise Objects with their AruCo IDs and Poses
+def initialise_objects_in_environment():
+	objects_with_aruco_ids_and_poses = [
+											{'ID': 1, 'Name': 'Left_Wall_1', 'Pose': None, 'Final_Pose': None}, 
+											{'ID': 2, 'Name': 'Left_Wall_2', 'Pose': None, 'Final_Pose': None}, 
+											{'ID': 3, 'Name': 'Origin', 'Pose': None, 'Final_Pose': None}, 
+											{'ID': 4, 'Name': 'Right_Wall_2', 'Pose': None, 'Final_Pose': None}, 
+											{'ID': 5, 'Name': 'Right_Wall_1', 'Pose': None, 'Final_Pose': None}, 
+											{'ID': 6, 'Name': 'Chair_1', 'Pose': None, 'Final_Pose': None},
+											{'ID': 7, 'Name': 'Chair_2', 'Pose': None, 'Final_Pose': None},
+											{'ID': 8, 'Name': 'Chair_3', 'Pose': None, 'Final_Pose': None},
+											{'ID': 9, 'Name': 'Chair_4', 'Pose': None, 'Final_Pose': None}
+										]
+	return objects_with_aruco_ids_and_poses
+			
 
 # Define a Function to Round off values in a list
 def round_float_list(float_list, num_decimal_places):
