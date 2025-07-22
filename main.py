@@ -1,48 +1,63 @@
 # Import Necessary Scripts
+import spot_robot_commands
 import read_video_stream
 import pose_estimation
-import spot_robot_commands
-import coordinate_transformations
 import utils
+import time
 
 # Import Necessary Libraries
-import numpy as np
 import cv2
 
 
-# Configure SPOT robot and make it Stand
-robot = spot_robot_commands.setup_and_configure_robot()
-spot_robot_commands.make_SPOT_stand(robot)
+############################################################################################# INITIALISATION ################################################################################
 
-pose = np.array([
-                    [ 0,  -1,   0,   1],
-                    [ 1,   0,   0, 0.5],
-                    [ 0,   0,   1,   0],
-                    [ 0,   0,   0,   1]
-                ])
-spot_robot_commands.move_robot_to_location(robot, pose)
+# Define the type of AruCo marker used in Environment
+aruco_type = cv2.aruco.DICT_APRILTAG_36h11
 
-# Read Image frames continuously
-while True:
+# Read Camera Calibration parameters for both Cameras
+camera_calibration_params = read_video_stream.read_camera_calibration_params()
 
-    # Detect the Fiducials in the Robot's environment
-    aruco_tags_data_wrt_spot_body_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
+# Configure and Stream Realsense Camera Pipelines for both Cameras
+camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pipeline()
+
+# Initialise Objects in Scene with their AruCo ID, Name, Poses
+objects = utils.Objects(num_of_objects = 9)
+
+# Read the Image frames
+camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
+camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
+
+# Get the Pose of AruCo tags wrt both Cameras
+aruco_tags_data_wrt_camera_1_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_1_frame, objects, aruco_type, camera_calibration_params['Camera_1']) 
+aruco_tags_data_wrt_camera_2_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_2_frame, objects, aruco_type, camera_calibration_params['Camera_2'])
+
+# Calculate the Pose of both Cameras wrt Origin AruCo marker
+poses_of_cameras = pose_estimation.get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
+
+############################################################################################### MAIN PROGRAM ###############################################################################
+
+# Read Image frames from both the Cameras
+try:
+
+    # Read Image frames continuously
+    while True:
+
+        # Read Image frames from both Cameras
+        camera_1_frame = read_video_stream.read_frames_from_pipelines(camera_1_pipeline)
+        camera_2_frame = read_video_stream.read_frames_from_pipelines(camera_2_pipeline)
+            
+        # Get the Pose of AruCo tags in both Camera frame
+        aruco_tags_data_wrt_camera_1_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_1_frame, objects, aruco_type, camera_calibration_params['Camera_1'])        
+        aruco_tags_data_wrt_camera_2_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_2_frame, objects, aruco_type, camera_calibration_params['Camera_2'])        
+
+        # Get the Pose of AruCo tags wrt SPOT Body Frame
+        aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial.detect_aruco_tags_wrt_spot_body_frame(objects)
+
+        # Quit when Q key is Pressed
+        if cv2.waitKey(1) == ord('q'):
+            break
     
-    # Get the Poses of Chair wrt Camera and SPOT frames
-    pose_of_aruco_on_chair_wrt_spot_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_body_frame, 'Chair_1')
-
-    # Compute Grasp Pose of Chair wrt SPOT grav aligned body frame
-    chair_grasp_pose_wrt_spot = coordinate_transformations.compute_final_grasp_pose_of_chair(pose_of_aruco_on_chair_wrt_spot_frame, offset = 'SPOT')
-    grasped = spot_robot_commands.move_arm_to_grasp_chair(robot, chair_grasp_pose_wrt_spot)
-
-    # Check if Chair is Grasped
-    if grasped:
-    
-        # Wait for User input
-        ch = input("Press G to begin Grasping: ")
-        if ch == 'G':
-            continue
-    
-    # Quit when Q key is Pressed
-    if cv2.waitKey(1) == ord('q'):
-        break
+# Stop streaming finally
+finally:
+    camera_1_pipeline.stop()
+    camera_2_pipeline.stop()

@@ -54,7 +54,14 @@ class Object:
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
 		self.name = self.objects_with_aruco_ids[self.aruco_id]
-		self.pose = None
+
+		# If Object name is Origin
+		if "Origin" in self.name:
+			self.pose = np.identity(4)
+		
+		# Else if Object name is not Origin
+		else:
+			self.pose = None
 
 		# If Object name is a Chair
 		if "Chair" in self.name:
@@ -87,26 +94,26 @@ class Objects:
 		for i in range(num_of_objects):
 			self.objects.append(Object(aruco_id = i + 1))
 	
-	
+	# Define a Function to get the Value of a given field from Objects list
+	def get_key_value_of_object(self, aruco_id, field):
 
+		# For every Object in List
+		for object in self.objects:
 
-# Define a Function to Calculate Pose from SPOT Data
-def compute_pose_from_spot_data(spot_data):
+			# If AruCo ID matches
+			if object.aruco_id == aruco_id:
 
-	# Initialise Transformation matrix
-	transformation_matrix = np.zeros((4, 4))
+				# If field is Name, Return Name
+				if field == "Name": return object.name
 
-	# Get the Translation vector & Rotation quartenion
-	translation = spot_data.position
-	translation = [translation.x, translation.y, translation.z]
-	quartenion = spot_data.rotation
-	quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
+				# If field is Pose, Return Pose
+				elif field == "Pose": return object.pose
 
-	# Frame and Return Transformation matrix
-	transformation_matrix[:3, 3] = np.array(translation).T
-	transformation_matrix[:3, :3] = R.from_quat(quartenion).as_matrix()
-	transformation_matrix[3, 3] = 1
-	return round_matrix_list(transformation_matrix, 3)
+				# If field is Final Pose, Return Final Pose
+				elif field == "Final_Pose": return object.final_pose
+
+				# Else Return None
+				else: return None
 
 
 # Define a Function to Round off values in a list
@@ -127,6 +134,38 @@ def round_matrix_list(matrix_list, num_decimal_places):
 	
 	# Return the rounded off Rotation matrix
 	return matrix_list
+
+
+# Define a Function to get the Pose of AruCo tag from List of detected AruCo tags wrt any Coordinate frame
+def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
+
+	# For every AruCo tag wrt that Frame
+	for aruco_tag_data_wrt_frame in aruco_tags_data_wrt_frame:
+
+		# If Name matches
+		if aruco_tag_data_wrt_frame['Name'] == object_name:
+
+			# Return the Pose of AruCo tag
+			return aruco_tags_data_wrt_frame['Pose']
+		
+
+# Define a Function to Calculate Pose from SPOT Data
+def compute_pose_from_spot_data(spot_data):
+
+	# Initialise Transformation matrix
+	transformation_matrix = np.zeros((4, 4))
+
+	# Get the Translation vector & Rotation quartenion
+	translation = spot_data.position
+	translation = [translation.x, translation.y, translation.z]
+	quartenion = spot_data.rotation
+	quartenion = [quartenion.x, quartenion.y, quartenion.z, quartenion.w]
+
+	# Frame and Return Transformation matrix
+	transformation_matrix[:3, 3] = np.array(translation).T
+	transformation_matrix[:3, :3] = R.from_quat(quartenion).as_matrix()
+	transformation_matrix[3, 3] = 1
+	return round_matrix_list(transformation_matrix, 3)
 
 
 # Define a Function to Calculate Pose from Translation and Rotation vector/angles

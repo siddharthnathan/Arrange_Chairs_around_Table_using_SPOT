@@ -5,7 +5,7 @@ import cv2
 
 
 # Define a Function to Get Pose of AruCo tag in Image frame
-def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
+def estimate_poses_of_aruco_tags(frame, objects, aruco_dict_type, camera_calibration_params):
 
     # Extract Camera Matrix and Distortion coefficients
     matrix_coefficients, distortion_coefficients = camera_calibration_params['Calibration_matrix'], camera_calibration_params['Distortion_coefficients']
@@ -42,15 +42,17 @@ def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.20, matrix_coefficients, distortion_coefficients)
    
             # Store all Parameters into Dictionary
-            aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))                                                       # Name of AruCo tag
-            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(translation = list(tvecs[i][0]), rotation = list(rvecs[i][0]), angle = False)     # Pose of AruCo tag with Red-square at Top-Left
+            aruco_tag_pose['Name'] = objects.get_key_value_of_object(aruco_id = int(ids[i]), field = "Name")            # Name of AruCo tag
+            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(translation = list(tvecs[i][0]), 
+                                                                               rotation = list(rvecs[i][0]), 
+                                                                               angle = False)                           # Pose of AruCo tag with Red-square at Top-Left
             aruco_tag_pose['Pose'] = aruco_tag_pose['Pose'] @ np.array([
                                                                             [ 0,  1,  0,  0],
                                                                             [-1,  0,  0,  0],
                                                                             [ 0,  0,  1,  0],
                                                                             [ 0,  0,  0,  1]
-                                                                        ])                                                              # Pose of AruCo tag with Red-sqaure at Top-Right
-                                                                                                                                        # since SPOT also estimates pose in same way
+                                                                        ])                                              # Pose of AruCo tag with Red-sqaure at Top-Right
+                                                                                                                        # since SPOT also estimates pose in same way
 
             # Draw Pose axes in the AruCo tag image
             cv2.aruco.drawDetectedMarkers(frame, corners)
@@ -60,13 +62,18 @@ def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
             poses_of_aruco_tags.append(aruco_tag_pose)
 
         # Display Image with Estimated Poses of AruCo markers
-        utils.display_image(camera_calibration_params['Name'], poses_of_aruco_tags)
+        cv2.imshow(camera_calibration_params['Name'], frame)
+        cv2.waitKey(1)
 
         # Return AruCo poses
         return poses_of_aruco_tags
     
     # Else Return None
     else:
+
+        # Display Image
+        cv2.imshow(camera_calibration_params['Name'], frame)
+        cv2.waitKey(1)
         return None
 
 
