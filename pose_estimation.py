@@ -43,7 +43,7 @@ def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
    
             # Store all Parameters into Dictionary
             aruco_tag_pose['Name'] = utils.get_object_with_aruco_tag(int(ids[i]))                                                       # Name of AruCo tag
-            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors(translation = list(tvecs[i][0]), rotation = list(rvecs[i][0]))     # Pose of AruCo tag with Red-square at Top-Left
+            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(translation = list(tvecs[i][0]), rotation = list(rvecs[i][0]), angle = False)     # Pose of AruCo tag with Red-square at Top-Left
             aruco_tag_pose['Pose'] = aruco_tag_pose['Pose'] @ np.array([
                                                                             [ 0,  1,  0,  0],
                                                                             [-1,  0,  0,  0],
@@ -59,12 +59,15 @@ def get_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
             # Append Pose of AruCo tag into List
             poses_of_aruco_tags.append(aruco_tag_pose)
 
-        # Return Image and AruCo poses
-        return frame, poses_of_aruco_tags
+        # Display Image with Estimated Poses of AruCo markers
+        utils.display_image(camera_calibration_params['Name'], poses_of_aruco_tags)
+
+        # Return AruCo poses
+        return poses_of_aruco_tags
     
     # Else Return None
     else:
-        return frame, None
+        return None
 
 
 # Define a Function to Compute the Poses of both Cameras wrt Origin

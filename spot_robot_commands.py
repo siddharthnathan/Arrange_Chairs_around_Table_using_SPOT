@@ -1,23 +1,21 @@
-# Import Necessary Libraries
-import utils
-import time
-import os
-
 # Import Necessary Bosdyn Libraries
-from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, VISION_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
+from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, block_until_arm_arrives
-from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
-from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.client.world_object import WorldObjectClient
 from bosdyn.client.robot_state import RobotStateClient
-from bosdyn.api import geometry_pb2, trajectory_pb2, world_object_pb2
+from bosdyn.api import geometry_pb2, world_object_pb2
 from bosdyn.client.image import ImageClient
 from bosdyn.client.power import PowerClient
 from bosdyn.client import math_helpers
-from bosdyn import geometry
 import bosdyn.client.lease
 import bosdyn.client.util
 import bosdyn.client
+
+# Import Necessary Libraries
+import numpy as np
+import utils
+import time
+import os
 
 
 # Define a Function to Setup and Configure SPOT Robot
@@ -196,7 +194,7 @@ def move_arm_to_pose(robot, pose):
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
        
         # Get Translation and Rotation quartenion from Pose
-        translation, quartenion = utils.get_translation_and_quartenion_from_pose(pose)
+        translation, quartenion = utils.get_translation_and_rotation_from_pose(pose, angle = False)
 
         # Build a position to move the arm to (in meters, relative to and expressed in the gravity aligned body frame).
         x, y, z = translation
@@ -256,13 +254,16 @@ def move_arm_to_default_pose(robot):
 
 
 # Define a Function to Move SPOT to a given Pose
-def move_robot_to_location(robot):
+def move_robot_to_location(robot, pose):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
     assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
 
     # Define Clients to Read Images
     lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+
+    # Get the Translation and Rotation from Pose
+    translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
     
     # Until Lease is kept alive
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
@@ -270,8 +271,9 @@ def move_robot_to_location(robot):
         # Create a Command Client
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
 
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = 0.2, v_y = 0.1, v_rot = 1.57)
-        command_client.robot_command(cmd, end_time_secs = time.time() + 2)
+        # Define the Command and send the Request
+        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = translation[0], v_y = translation[1], v_rot = np.deg2rad(rotation[2]))
+        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
 
 
 # Define a Function to Move Robot gripper to Grasp Chair

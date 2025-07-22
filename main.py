@@ -6,15 +6,22 @@ import coordinate_transformations
 import utils
 
 # Import Necessary Libraries
+import numpy as np
 import cv2
 
 
 # Configure SPOT robot and make it Stand
 robot = spot_robot_commands.setup_and_configure_robot()
 spot_robot_commands.make_SPOT_stand(robot)
-spot_robot_commands.move_robot_to_location(robot)
 
-'''
+pose = np.array([
+                    [ 0,  -1,   0,   1],
+                    [ 1,   0,   0, 0.5],
+                    [ 0,   0,   1,   0],
+                    [ 0,   0,   0,   1]
+                ])
+spot_robot_commands.move_robot_to_location(robot, pose)
+
 # Read Image frames continuously
 while True:
 
@@ -39,4 +46,3 @@ while True:
     # Quit when Q key is Pressed
     if cv2.waitKey(1) == ord('q'):
         break
-'''

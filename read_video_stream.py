@@ -50,11 +50,13 @@ def read_camera_calibration_params():
 	camera_calibration_params = {
 									'Camera_1': 
 									{
+                                        'Name': 'Camera_1',
 										'Calibration_matrix': np.load('Camera_Calibration/Camera_1/calibration_matrix.npy'),
 										'Distortion_coefficients': np.load('Camera_Calibration/Camera_1/distortion_coefficients.npy'),
 									},
 									'Camera_2': 
 									{
+                                        'Name': 'Camera_2',
 										'Calibration_matrix': np.load('Camera_Calibration/Camera_2/calibration_matrix.npy'),
 										'Distortion_coefficients': np.load('Camera_Calibration/Camera_2/distortion_coefficients.npy'),
 									}
