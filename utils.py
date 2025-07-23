@@ -146,7 +146,10 @@ def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 		if aruco_tag_data_wrt_frame['Name'] == object_name:
 
 			# Return the Pose of AruCo tag
-			return aruco_tags_data_wrt_frame['Pose']
+			return aruco_tag_data_wrt_frame['Pose']
+	
+	# Return None if not found
+	return None
 		
 
 # Define a Function to Calculate Pose from SPOT Data

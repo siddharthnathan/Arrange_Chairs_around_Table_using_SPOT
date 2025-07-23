@@ -28,7 +28,7 @@ def setup_and_configure_robot():
 
     # Setup Configurations for SPOT
     bosdyn.client.util.setup_logging(False)
-    sdk = bosdyn.client.create_standard_sdk('GraspChair')
+    sdk = bosdyn.client.create_standard_sdk('ArrangeChairs')
     robot = sdk.create_robot(robot_ip)
     bosdyn.client.util.authenticate(robot)
     robot.time_sync.wait_for_sync()

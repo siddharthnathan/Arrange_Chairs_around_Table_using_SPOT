@@ -1,4 +1,5 @@
 # Import Necessary Libraries
+import read_video_stream
 import numpy as np
 import utils
 import cv2
@@ -62,18 +63,16 @@ def estimate_poses_of_aruco_tags(frame, objects, aruco_dict_type, camera_calibra
             poses_of_aruco_tags.append(aruco_tag_pose)
 
         # Display Image with Estimated Poses of AruCo markers
-        cv2.imshow(camera_calibration_params['Name'], frame)
-        cv2.waitKey(1)
+        read_video_stream.display_image(camera_calibration_params['Name'], frame)
 
-        # Return AruCo poses
+        # Return Estimated Poses of AruCo tags
         return poses_of_aruco_tags
     
     # Else Return None
     else:
 
         # Display Image
-        cv2.imshow(camera_calibration_params['Name'], frame)
-        cv2.waitKey(1)
+        read_video_stream.display_image(camera_calibration_params['Name'], frame)
         return None
 
 
@@ -90,3 +89,36 @@ def get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt
 
     # Return the Poses of Cameras wrt Origin
     return [camera_1_pose, camera_2_pose]
+
+
+# Define a Function to Compute Poses of every Object wrt Origin marker using Images from both Cameras
+def compute_pose_for_all_objects(images, objects, aruco_type, camera_calibration_params):
+
+    # Get the Pose of AruCo tags wrt both Cameras
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], objects, aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], objects, aruco_type, camera_calibration_params['Camera_2'])
+
+    # Calculate the Pose of both Cameras wrt Origin AruCo marker
+    poses_of_cameras = get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
+
+    # For every Object in Objects
+    for object in objects.objects:
+
+        # Get the Pose of Object wrt Camera frame
+        pose_of_object_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, object.name)
+        pose_of_object_wrt_camera_2_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, object.name)
+
+        # If Object is detected by Camera 1
+        if pose_of_object_wrt_camera_1_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
+        
+        # If Object is detected by Camera 2
+        elif pose_of_object_wrt_camera_2_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
+
+    # Return the Objects with updated Poses & Camera Poses
+    return objects, poses_of_cameras

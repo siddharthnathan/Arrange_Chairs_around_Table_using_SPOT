@@ -23,16 +23,9 @@ camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pi
 # Initialise Objects in Scene with their AruCo ID, Name, Poses
 objects = utils.Objects(num_of_objects = 9)
 
-# Read the Image frames
-camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
-camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
-
-# Get the Pose of AruCo tags wrt both Cameras
-aruco_tags_data_wrt_camera_1_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_1_frame, objects, aruco_type, camera_calibration_params['Camera_1']) 
-aruco_tags_data_wrt_camera_2_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_2_frame, objects, aruco_type, camera_calibration_params['Camera_2'])
-
-# Calculate the Pose of both Cameras wrt Origin AruCo marker
-poses_of_cameras = pose_estimation.get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame)
+# Compute the Poses of every AruCo tag on Objects using the Images from both cameras
+initial_frames = [cv2.imread('image_1.jpg'), cv2.imread('image_2.jpg')]
+objects, poses_of_cameras = pose_estimation.compute_pose_for_all_objects(initial_frames, objects, aruco_type, camera_calibration_params)
 
 ############################################################################################### MAIN PROGRAM ###############################################################################
 
@@ -43,8 +36,8 @@ try:
     while True:
 
         # Read Image frames from both Cameras
-        camera_1_frame = read_video_stream.read_frames_from_pipelines(camera_1_pipeline)
-        camera_2_frame = read_video_stream.read_frames_from_pipelines(camera_2_pipeline)
+        camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
+        camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
             
         # Get the Pose of AruCo tags in both Camera frame
         aruco_tags_data_wrt_camera_1_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_1_frame, objects, aruco_type, camera_calibration_params['Camera_1'])        
