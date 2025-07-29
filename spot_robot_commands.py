@@ -89,7 +89,7 @@ class DetectFiducial(object):
         return self._image
 
     # Define a Function to Detect Fiducials wrt SPOT Body frame
-    def detect_aruco_tags_wrt_spot_body_frame(self, objects):
+    def detect_aruco_tags_wrt_spot_body_frame(self):
         
         # Sync Robot time
         self._robot.logger.info('Detecting Fiducials in Environment wrt SPOT body frame...')
@@ -111,7 +111,7 @@ class DetectFiducial(object):
                 aruco_tag_wrt_spot_body_frame = {}
 
                 # Get the Name of the AruCo tag in Environment
-                aruco_tag_wrt_spot_body_frame['Name'] = objects.get_key_value_of_object(aruco_id = int(fiducial.apriltag_properties.frame_name_fiducial[-1]), field = "Name")
+                aruco_tag_wrt_spot_body_frame['ID'] = int(fiducial.apriltag_properties.frame_name_fiducial[-1])
                        
                 # Get its Transformation wrt SPOT body frame
                 fiducial_wrt_spot_body = get_a_tform_b(

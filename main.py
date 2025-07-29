@@ -11,6 +11,9 @@ import cv2
 
 ############################################################################################# INITIALISATION ################################################################################
 
+# Get the Object mapping with their AruCo IDs
+objects_with_aruco_ids = utils.read_mapping_of_objects()
+
 # Define the type of AruCo marker used in Environment
 aruco_type = cv2.aruco.DICT_APRILTAG_36h11
 
@@ -21,11 +24,10 @@ camera_calibration_params = read_video_stream.read_camera_calibration_params()
 camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pipeline()
 
 # Initialise Objects in Scene with their AruCo ID, Name, Poses
-objects = utils.Objects(num_of_objects = 9)
+objects = utils.Objects(objects_with_aruco_ids)
 
-# Compute the Poses of every AruCo tag on Objects using the Images from both cameras
-initial_frames = [cv2.imread('image_1.jpg'), cv2.imread('image_2.jpg')]
-objects, poses_of_cameras = pose_estimation.compute_pose_for_all_objects(initial_frames, objects, aruco_type, camera_calibration_params)
+# Compute the Poses of both Cameras using the Initial Images from both cameras
+poses_of_cameras = pose_estimation.get_poses_of_cameras(['initial_image_1.jpg', 'initial_image_2.jpg'], aruco_type, camera_calibration_params)
 
 ############################################################################################### MAIN PROGRAM ###############################################################################
 

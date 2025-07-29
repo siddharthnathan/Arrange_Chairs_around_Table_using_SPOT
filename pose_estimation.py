@@ -6,7 +6,7 @@ import cv2
 
 
 # Define a Function to Get Pose of AruCo tag in Image frame
-def estimate_poses_of_aruco_tags(frame, objects, aruco_dict_type, camera_calibration_params):
+def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
 
     # Extract Camera Matrix and Distortion coefficients
     matrix_coefficients, distortion_coefficients = camera_calibration_params['Calibration_matrix'], camera_calibration_params['Distortion_coefficients']
@@ -43,7 +43,7 @@ def estimate_poses_of_aruco_tags(frame, objects, aruco_dict_type, camera_calibra
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.20, matrix_coefficients, distortion_coefficients)
    
             # Store all Parameters into Dictionary
-            aruco_tag_pose['Name'] = objects.get_key_value_of_object(aruco_id = int(ids[i]), field = "Name")            # Name of AruCo tag
+            aruco_tag_pose['ID'] = int(ids[i])                                                                          # ID of AruCo tag
             aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(translation = list(tvecs[i][0]), 
                                                                                rotation = list(rvecs[i][0]), 
                                                                                angle = False)                           # Pose of AruCo tag with Red-square at Top-Left
@@ -77,7 +77,11 @@ def estimate_poses_of_aruco_tags(frame, objects, aruco_dict_type, camera_calibra
 
 
 # Define a Function to Compute the Poses of both Cameras wrt Origin
-def get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt_camera_2_frame):
+def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
+
+    # Get the Pose of AruCo tags wrt both Cameras
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(initial_images[0], aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(initial_images[1], aruco_type, camera_calibration_params['Camera_2'])
 
     # Get the Pose of Origin wrt Camera 1 and Camera 2
     origin_pose_wrt_camera_1 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, 'Origin')
@@ -91,8 +95,8 @@ def get_poses_of_cameras(aruco_tags_data_wrt_camera_1_frame, aruco_tags_data_wrt
     return [camera_1_pose, camera_2_pose]
 
 
-# Define a Function to Compute Poses of every Object wrt Origin marker using Images from both Cameras
-def compute_pose_for_all_objects(images, objects, aruco_type, camera_calibration_params):
+# Define a Function to Compute and Update Poses of every Object wrt Origin marker using Images from both Cameras
+def update_pose_for_all_objects(images, objects, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], objects, aruco_type, camera_calibration_params['Camera_1']) 

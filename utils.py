@@ -4,56 +4,38 @@ import numpy as np
 import cv2
 
 
+# Define a Function to Read Object mapping from Text file
+def read_mapping_of_objects():
+
+	# Initialise Object Mapping Dictionary
+	object_mapping = {}
+	
+	# Read Text File
+	with open("object_mapping.txt") as file:
+		
+		# For every Line in File
+		lines = file.readlines()
+		for line in lines:
+
+			# Extract Key and Value
+			aruco_id, name = line.split(' ')
+
+			# Form Object Mapping Dictionary
+			object_mapping[int(aruco_id)] = name.replace('\n', '')
+	
+	# Return Object Mapping
+	return object_mapping
+
+
 # Define a Class to store the AruCo ID, Name, Pose of Object
 class Object:
 
 	# Define the Init Function
-	def __init__(self, aruco_id):
-
-		# Define the Mapping of Object names with AruCo IDs
-		self.objects_with_aruco_ids = {
-											1: 'Left_Wall_1',
-											2: 'Left_Wall_2',
-											3: 'Origin',
-											4: 'Right_Wall_1',
-											5: 'Right_Wall_2',
-											6: 'Chair_1',
-											7: 'Chair_2',
-											8: 'Chair_3',
-											9: 'Chair_4',
-									 }
-		
-		# Define the Goal Configuration Poses of Chairs
-		self.goal_configuration_poses_of_chairs = {
-														'Chair_1': np.array([
-																				[  1,  0,  0,  0.2 ],
-																				[  0,  1,  0,  0.4 ],
-																				[  0,  0,  1,  0.1 ],
-																				[  0,  0,  0,  1   ]
-																			]),
-														'Chair_2': np.array([
-																				[  1,  0,  0,  0.5 ],
-																				[  0,  1,  0,  0.3 ],
-																				[  0,  0,  1,  0.8 ],
-																				[  0,  0,  0,  1   ]
-																			]),
-														'Chair_3': np.array([
-																				[  1,  0,  0,  0.6 ],
-																				[  0,  1,  0,  0.2 ],
-																				[  0,  0,  1,  0.9 ],
-																				[  0,  0,  0,  1   ]
-																			]),
-														'Chair_4': np.array([
-																				[  1,  0,  0,  0.9 ],
-																				[  0,  1,  0,  0.4 ],
-																				[  0,  0,  1,  0.5 ],
-																				[  0,  0,  0,  1   ]
-																			]),
-												  }
-		
+	def __init__(self, aruco_id, name):
+				
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
-		self.name = self.objects_with_aruco_ids[self.aruco_id]
+		self.name = name
 
 		# If Object name is Origin
 		if "Origin" in self.name:
@@ -87,33 +69,12 @@ class Object:
 class Objects:
 
 	# Define the Init Function
-	def __init__(self, num_of_objects):
+	def __init__(self, objects_with_aruco_ids):
 		
 		# Initialise Objects in Scene
 		self.objects = []
-		for i in range(num_of_objects):
-			self.objects.append(Object(aruco_id = i + 1))
-	
-	# Define a Function to get the Value of a given field from Objects list
-	def get_key_value_of_object(self, aruco_id, field):
-
-		# For every Object in List
-		for object in self.objects:
-
-			# If AruCo ID matches
-			if object.aruco_id == aruco_id:
-
-				# If field is Name, Return Name
-				if field == "Name": return object.name
-
-				# If field is Pose, Return Pose
-				elif field == "Pose": return object.pose
-
-				# If field is Final Pose, Return Final Pose
-				elif field == "Final_Pose": return object.final_pose
-
-				# Else Return None
-				else: return None
+		for key, val in objects_with_aruco_ids.items():
+			self.objects.append(Object(aruco_id = key, name = val))
 
 
 # Define a Function to Round off values in a list
