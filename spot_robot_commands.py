@@ -115,8 +115,9 @@ class DetectFiducial(object):
                        
                 # Get its Transformation wrt SPOT body frame
                 fiducial_wrt_spot_body = get_a_tform_b(
-                    fiducial.transforms_snapshot, BODY_FRAME_NAME,
-                    fiducial.apriltag_properties.frame_name_fiducial).to_proto()
+                                                        fiducial.transforms_snapshot, BODY_FRAME_NAME,
+                                                        fiducial.apriltag_properties.frame_name_fiducial
+                                                      ).to_proto()
 
                 # Store the Pose of AruCo tag wrt SPOT Body frame
                 aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_spot_data(fiducial_wrt_spot_body)

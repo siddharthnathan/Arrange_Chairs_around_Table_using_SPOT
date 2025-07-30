@@ -8,6 +8,7 @@ import cv2
 def read_mapping_of_objects():
 
 	# Initialise Object Mapping Dictionary
+	global object_mapping
 	object_mapping = {}
 	
 	# Read Text File
@@ -36,6 +37,7 @@ class Object:
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
 		self.name = name
+		self.final_pose = None
 
 		# If Object name is Origin
 		if "Origin" in self.name:
@@ -43,16 +45,8 @@ class Object:
 		
 		# Else if Object name is not Origin
 		else:
-			self.pose = None
+			self.pose = None	
 
-		# If Object name is a Chair
-		if "Chair" in self.name:
-			self.final_pose = self.goal_configuration_poses_of_chairs[self.name]
-		
-		# Else if Object is not a Chair
-		else:
-			self.final_pose = None
-			
 
 	# Define a Function to Display Class members
 	def display(self):
@@ -60,8 +54,8 @@ class Object:
 		# Display Class Members
 		print("AruCo ID: ", self.aruco_id)
 		print("Name: ", self.name)
-		print("Pose: ", self.pose)
-		print("Final_Pose: \n", self.final_pose)
+		print("Pose:\n", self.pose)
+		print("Final_Pose:\n", self.final_pose)
 		print("\n")
 			
 
@@ -75,6 +69,16 @@ class Objects:
 		self.objects = []
 		for key, val in objects_with_aruco_ids.items():
 			self.objects.append(Object(aruco_id = key, name = val))
+	
+
+	# Define a Function to Display all Objects
+	def display(self):
+
+		# For every Object
+		for object in self.objects:
+
+			# Display Data for that Object
+			object.display()
 
 
 # Define a Function to Round off values in a list
@@ -100,13 +104,16 @@ def round_matrix_list(matrix_list, num_decimal_places):
 # Define a Function to get the Pose of AruCo tag from List of detected AruCo tags wrt any Coordinate frame
 def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 
-	# For every AruCo tag wrt that Frame
+	# Get the AruCo ID corresponding to the Object name
+	aruco_id = list(object_mapping.keys())[list(object_mapping.values()).index(object_name)]
+
+	# For every AruCo tag detected in frame
 	for aruco_tag_data_wrt_frame in aruco_tags_data_wrt_frame:
 
-		# If Name matches
-		if aruco_tag_data_wrt_frame['Name'] == object_name:
+		# If AruCo ID matches given ID
+		if aruco_id == aruco_tag_data_wrt_frame['ID']:
 
-			# Return the Pose of AruCo tag
+			# Return the Pose of that AruCo marker
 			return aruco_tag_data_wrt_frame['Pose']
 	
 	# Return None if not found
