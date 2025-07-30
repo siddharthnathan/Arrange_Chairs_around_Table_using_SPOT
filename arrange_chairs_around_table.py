@@ -9,13 +9,31 @@ import time
 import cv2
 
 
-# Define the Main Function
-def main():
+# Define a Function to Set Poses of Objects at Initial and Final Configuration
+def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params):
 
-    ############################################################################################# INITIALISATION ################################################################################
+    # Compute the Poses of both Cameras using the Initial Images from both cameras
+    initial_images = [cv2.imread('initial_image_1.jpg'), cv2.imread('initial_image_2.jpg')]
+    poses_of_cameras = pose_estimation.get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params)
 
     # Get the Object mapping with their AruCo IDs
     objects_with_aruco_ids = utils.read_mapping_of_objects()
+
+    # Initialise Objects in Scene with their AruCo ID, Name, Poses
+    objects = utils.Objects(objects_with_aruco_ids)
+
+    # Update the Poses of AruCo markers using Initial Images from both cameras
+    objects = pose_estimation.update_pose_of_objects(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
+
+    # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
+    objects = pose_estimation.update_final_poses_of_chairs(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
+
+    # Return the Poses of Cameras and Objects
+    return poses_of_cameras, objects
+
+
+# Define the Main Function
+def main():
 
     # Define the type of AruCo marker used in Environment
     aruco_type = cv2.aruco.DICT_APRILTAG_36h11
@@ -26,17 +44,8 @@ def main():
     # Configure and Stream Realsense Camera Pipelines for both Cameras
     camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pipeline()
 
-    # Initialise Objects in Scene with their AruCo ID, Name, Poses
-    objects = utils.Objects(objects_with_aruco_ids)
-
-    # Compute the Poses of both Cameras using the Initial Images from both cameras
-    initial_images = [cv2.imread(initial_images[0]), cv2.imread(initial_images[1])]
-    poses_of_cameras = pose_estimation.get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params)
-
-    # Update the Poses of AruCo markers using Initial Images from both cameras
-    objects = pose_estimation.update_pose_of_objects(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
-
-    ############################################################################################### MAIN PROGRAM ###############################################################################
+    # Set Poses of Objects at Initial and Final Configuration
+    poses_of_cameras, objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
 
     # Try block
     try:

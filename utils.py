@@ -37,15 +37,16 @@ class Object:
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
 		self.name = name
-		self.final_pose = None
 
 		# If Object name is Origin
 		if "Origin" in self.name:
 			self.pose = np.identity(4)
+			self.final_pose = np.identity(4)
 		
 		# Else if Object name is not Origin
 		else:
-			self.pose = None	
+			self.pose = None
+			self.final_pose = None
 
 
 	# Define a Function to Display Class members
