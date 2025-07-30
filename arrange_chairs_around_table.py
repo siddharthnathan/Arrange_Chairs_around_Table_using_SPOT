@@ -30,7 +30,11 @@ def main():
     objects = utils.Objects(objects_with_aruco_ids)
 
     # Compute the Poses of both Cameras using the Initial Images from both cameras
-    poses_of_cameras = pose_estimation.get_poses_of_cameras(['initial_image_1.jpg', 'initial_image_2.jpg'], aruco_type, camera_calibration_params)
+    initial_images = [cv2.imread(initial_images[0]), cv2.imread(initial_images[1])]
+    poses_of_cameras = pose_estimation.get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params)
+
+    # Update the Poses of AruCo markers using Initial Images from both cameras
+    objects = pose_estimation.update_pose_of_objects(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
 
     ############################################################################################### MAIN PROGRAM ###############################################################################
 
@@ -44,12 +48,11 @@ def main():
             camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
             camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
                 
-            # Get the Pose of AruCo tags from both Camera frames
-            aruco_tags_data_wrt_camera_1_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_1_frame, aruco_type, camera_calibration_params['Camera_1'])        
-            aruco_tags_data_wrt_camera_2_frame = pose_estimation.estimate_poses_of_aruco_tags(camera_2_frame, aruco_type, camera_calibration_params['Camera_2'])        
-
+            # Update the Poses of AruCo markers using Initial Images from both cameras
+            objects = pose_estimation.update_pose_of_objects([camera_1_frame, camera_2_frame], objects, poses_of_cameras, aruco_type, camera_calibration_params)
+            
             # Get the Pose of AruCo tags wrt SPOT Body Frame
-            aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial.detect_aruco_tags_wrt_spot_body_frame(objects)
+            aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial.detect_aruco_tags_wrt_spot_body_frame()
 
             # Quit when Q key is Pressed
             if cv2.waitKey(1) == ord('q'):

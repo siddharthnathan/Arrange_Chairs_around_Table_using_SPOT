@@ -93,3 +93,33 @@ def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
 
     # Return the Poses of Cameras wrt Origin
     return [camera_1_pose, camera_2_pose]
+
+
+# Define a Function to Update Pose of Objects in scene
+def update_pose_of_objects(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+
+    # Get the Pose of AruCo tags wrt both Cameras
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], aruco_type, camera_calibration_params['Camera_2'])
+
+    # For every Object in Objects
+    for object in objects.objects:
+
+        # Get the Pose of Object wrt Camera frames
+        pose_of_object_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, object.name)
+        pose_of_object_wrt_camera_2_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, object.name)
+
+        # If Object is detected by Camera 1
+        if pose_of_object_wrt_camera_1_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
+        
+        # If Object is detected by Camera 2
+        elif pose_of_object_wrt_camera_2_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
+
+    # Return the Objects with updated Poses
+    return objects
