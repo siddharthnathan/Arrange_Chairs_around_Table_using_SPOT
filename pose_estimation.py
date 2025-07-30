@@ -142,7 +142,7 @@ def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
 
 
 # Define a Function to Update Pose of Objects in scene
-def update_pose_of_objects(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+def update_poses_of_origins(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
@@ -151,8 +151,8 @@ def update_pose_of_objects(images, objects, poses_of_cameras, aruco_type, camera
     # For every Object in Objects
     for object in objects.objects:
 
-        # If Object is not Origin
-        if object.name is not "Origin":
+        # If Object is not Origin nor Chair
+        if object.name is not "Origin" and "Chair" not in object.name:
 
             # Get the Pose of Object wrt Camera frames
             pose_of_object_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, object.name)
@@ -205,3 +205,7 @@ def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, 
 
     # Return the Objects with updated Poses
     return objects
+
+
+# Define a Function to Update Poses of Objects wrt Camera frame and SPOT frame
+def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, poses_of_cameras, aruco_type, camera_calibration_params):
