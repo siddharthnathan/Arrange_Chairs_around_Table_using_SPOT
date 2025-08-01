@@ -26,7 +26,8 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     objects = pose_estimation.update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
 
     # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
-    objects = pose_estimation.update_final_poses_of_chairs(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
+    final_images = [cv2.imread('final_image_1.jpg'), cv2.imread('final_image_2.jpg')]
+    objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
 
     # Return the Poses of Cameras and Objects
     return poses_of_cameras, objects
@@ -64,7 +65,7 @@ def main():
             objects = pose_estimation.update_poses_of_objects(
                                                                 [camera_1_frame, camera_2_frame], aruco_tags_data_wrt_spot_frame, 
                                                                 objects, poses_of_cameras, aruco_type, camera_calibration_params
-                                                            )
+                                                             )
 
             # Quit when Q key is Pressed
             if cv2.waitKey(1) == ord('q'):

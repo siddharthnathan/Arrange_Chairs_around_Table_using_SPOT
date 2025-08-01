@@ -90,15 +90,17 @@ def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_para
    
             # Store all Parameters into Dictionary
             aruco_tag_pose['ID'] = int(ids[i])                                                                          # ID of AruCo tag
-            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(translation = list(tvecs[i][0]), 
-                                                                               rotation = list(rvecs[i][0]), 
-                                                                               angle = False)                           # Pose of AruCo tag with Red-square at Top-Left
+            aruco_tag_pose['Pose'] = utils.compute_pose_from_vectors_or_angles(
+                                                                                translation = list(tvecs[i][0]), 
+                                                                                rotation = list(rvecs[i][0]), 
+                                                                                angle = False
+                                                                              )                                         # Pose of AruCo tag with Red-square at Top-Left
             aruco_tag_pose['Pose'] = aruco_tag_pose['Pose'] @ np.array([
                                                                             [ 0,  1,  0,  0],
                                                                             [-1,  0,  0,  0],
                                                                             [ 0,  0,  1,  0],
                                                                             [ 0,  0,  0,  1]
-                                                                        ])                                              # Pose of AruCo tag with Red-sqaure at Top-Right
+                                                                       ])                                               # Pose of AruCo tag with Red-sqaure at Top-Right
                                                                                                                         # since SPOT also estimates pose in same way
 
             # Draw Pose axes in the AruCo tag image
@@ -165,7 +167,7 @@ def update_poses_of_origins(images, objects, poses_of_cameras, aruco_type, camer
                 object.pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
             
             # If Object is detected by Camera 2
-            elif pose_of_object_wrt_camera_2_frame is not None:
+            else:
 
                 # Update Pose of Object wrt Origin AruCo tag
                 object.pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
@@ -198,7 +200,7 @@ def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, 
                 object.final_pose = poses_of_cameras[0] @ pose_of_chair_wrt_camera_1_frame
             
             # If Chair is detected by Camera 2
-            elif pose_of_chair_wrt_camera_2_frame is not None:
+            else:
 
                 # Update Final Pose of Chair wrt Origin AruCo tag
                 object.final_pose = poses_of_cameras[1] @ pose_of_chair_wrt_camera_2_frame
@@ -209,3 +211,36 @@ def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, 
 
 # Define a Function to Update Poses of Objects wrt Camera frame and SPOT frame
 def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+
+    # Get the Pose of AruCo tags wrt both Cameras
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], aruco_type, camera_calibration_params['Camera_2'])
+
+    # For every Object in Objects
+    for object in objects.objects:
+
+        # Get the Pose of Object wrt Camera and SPOT frames
+        pose_of_object_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, object.name)
+        pose_of_object_wrt_camera_2_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, object.name)
+        pose_of_object_wrt_spot_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, object.name)
+
+        # If Object is detected by Camera 1
+        if pose_of_object_wrt_camera_1_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
+        
+        # If Object is detected by Camera 2
+        elif pose_of_object_wrt_camera_2_frame is not None:
+
+            # Update Pose of Object wrt Origin AruCo tag
+            object.pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
+        
+        # If Object is detected by SPOT
+        elif pose_of_object_wrt_spot_frame is not None:
+            
+            # Update Pose of Object wrt SPOT body frame
+            
+
+    # Return the Objects with updated Poses
+    return objects
