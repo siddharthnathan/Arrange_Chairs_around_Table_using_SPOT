@@ -67,10 +67,26 @@ class Objects:
 	def __init__(self, objects_with_aruco_ids):
 		
 		# Initialise Objects in Scene
+		self.objects_with_aruco_ids = objects_with_aruco_ids
 		self.objects = []
 		for key, val in objects_with_aruco_ids.items():
 			self.objects.append(Object(aruco_id = key, name = val))
 	
+	
+	# Define a Function to get the Pose of Object using AruCo ID
+	def get_value_of_object_using_key(self, aruco_id, key):
+
+		# For every Object in Objects
+		for object in self.objects:
+
+			# If Object ID matches given AruCo ID
+			if object.aruco_id == aruco_id:
+
+				# If Key is Current Pose, Return Current Pose
+				if key == "Pose":	return object.pose
+				
+				# If Key is Final Pose, Return Final Pose
+				elif key == "Final_Pose":	return object.final_pose
 
 	# Define a Function to Display all Objects
 	def display(self):

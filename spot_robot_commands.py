@@ -133,8 +133,7 @@ class DetectFiducial(object):
     def get_fiducial_objects(self):
 
         # Get all fiducial objects (an object of a specific type)
-        fiducial_objects = self._world_object_client.list_world_objects(
-            object_type = [world_object_pb2.WORLD_OBJECT_APRILTAG]).world_objects
+        fiducial_objects = self._world_object_client.list_world_objects(object_type = [world_object_pb2.WORLD_OBJECT_APRILTAG]).world_objects
         
         # Return the all detected fiducials
         if len(fiducial_objects) > 0:
@@ -148,8 +147,7 @@ class DetectFiducial(object):
 def open_or_close_gripper(robot, action):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
-                                    'such as the estop SDK example, to configure E-Stop.'
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
 
     # Create required Robot clients
     lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
@@ -176,8 +174,7 @@ def open_or_close_gripper(robot, action):
 def move_arm_to_pose(robot, pose):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
-                                    'such as the estop SDK example, to configure E-Stop.'
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
 
     # Create required Robot clients
     robot_state_client = robot.ensure_client(RobotStateClient.default_service_name)
@@ -227,8 +224,7 @@ def move_arm_to_pose(robot, pose):
 def move_arm_to_default_pose(robot):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, ' \
-                                    'such as the estop SDK example, to configure E-Stop.'
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
 
     # Create required Robot clients
     lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
