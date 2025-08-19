@@ -57,7 +57,7 @@ def main():
             # Read Image frames from both Cameras
             camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
             camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
-            
+
             # Get the Pose of AruCo tags wrt SPOT Body Frame
             aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial.detect_aruco_tags_wrt_spot_body_frame()
 
