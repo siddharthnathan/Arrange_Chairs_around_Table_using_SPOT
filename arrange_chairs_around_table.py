@@ -23,8 +23,9 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     objects = utils.Objects(objects_with_aruco_ids)
 
     # Update the Poses of Origins AruCo markers using Initial Images from both cameras
+    initial_images = [cv2.imread('initial_image_1.jpg'), cv2.imread('initial_image_2.jpg')]
     objects = pose_estimation.update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
-
+    
     # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
     final_images = [cv2.imread('final_image_1.jpg'), cv2.imread('final_image_2.jpg')]
     objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
@@ -47,7 +48,7 @@ def main():
 
     # Set Poses of Objects at Initial and Final Configuration
     poses_of_cameras, objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
-
+    
     # Try block
     try:
 

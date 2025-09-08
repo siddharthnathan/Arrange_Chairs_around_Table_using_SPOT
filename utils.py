@@ -121,6 +121,9 @@ def round_matrix_list(matrix_list, num_decimal_places):
 # Define a Function to get the Pose of AruCo tag from List of detected AruCo tags wrt any Coordinate frame
 def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 
+	# Get the Mapping of Objects with AruCo IDs
+	object_mapping = read_mapping_of_objects()
+
 	# Get the AruCo ID corresponding to the Object name
 	aruco_id = list(object_mapping.keys())[list(object_mapping.values()).index(object_name)]
 

@@ -144,17 +144,17 @@ def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
 
 
 # Define a Function to Update Pose of Objects in scene
-def update_poses_of_origins(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
-    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
-    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], aruco_type, camera_calibration_params['Camera_2'])
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(initial_images[0], aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(initial_images[1], aruco_type, camera_calibration_params['Camera_2'])
 
     # For every Object in Objects
     for i in range(len(objects.objects)):
 
         # If Object is not Origin nor Chair
-        if objects.objects[i].name is not "Origin" and "Chair" not in objects.objects[i].name:
+        if objects.objects[i].name != "Origin" and "Chair" not in objects.objects[i].name:
 
             # Get the Pose of Object wrt Camera frames
             pose_of_object_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, objects.objects[i].name)
