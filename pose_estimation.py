@@ -136,8 +136,8 @@ def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
     origin_pose_wrt_camera_2 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, 'Origin')
 
     # Compute the Pose of Camera 1 & Camera 2 wrt Origin
-    camera_1_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_1), 3)
-    camera_2_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3)
+    camera_1_pose = np.array(utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_1), 3))
+    camera_2_pose = np.array(utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3))
 
     # Return the Poses of Cameras wrt Origin
     return [camera_1_pose, camera_2_pose]
@@ -244,6 +244,9 @@ def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, pos
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
     aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], aruco_type, camera_calibration_params['Camera_2'])
 
+    # Determine the Pose of SPOT body frame wrt Origin AruCo tag
+    pose_of_spot_body_frame = localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
+
     # For every Object in Objects
     for i in range(len(objects.objects)):
 
@@ -269,9 +272,6 @@ def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, pos
             
             # If Object is detected by SPOT
             elif pose_of_object_wrt_spot_frame is not None:
-
-                # Determine the Pose of SPOT body frame wrt Origin AruCo tag
-                pose_of_spot_body_frame = localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
                 
                 # Update Pose of Object wrt Origin AruCo tag
                 objects.objects[i].pose = pose_of_spot_body_frame @ pose_of_object_wrt_spot_frame
@@ -280,5 +280,5 @@ def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, pos
             else:
                 objects.objects[i].pose = None
 
-    # Return the Objects with updated Poses
-    return objects
+    # Return the Objects with updated Poses alongwith SPOT body frame pose
+    return objects, pose_of_spot_body_frame

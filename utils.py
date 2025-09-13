@@ -47,6 +47,14 @@ class Object:
 		else:
 			self.pose = None
 			self.final_pose = None
+		
+		# Initialise arranged flag as None
+		self.is_arranged = None
+	
+
+	# Define a Function to check if Final pose is close to Current pose
+	def is_pose_final_pose(self):
+		np.allclose(self.pose, self.final_pose, rtol = 0.01, atol = 0.01)
 
 
 	# Define a Function to Display Class members
@@ -134,7 +142,7 @@ def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 		if aruco_id == aruco_tag_data_wrt_frame['ID']:
 
 			# Return the Pose of that AruCo marker
-			return aruco_tag_data_wrt_frame['Pose']
+			return np.array(aruco_tag_data_wrt_frame['Pose'])
 	
 	# Return None if not found
 	return None
