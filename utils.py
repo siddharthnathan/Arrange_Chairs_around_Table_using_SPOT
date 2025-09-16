@@ -52,9 +52,10 @@ class Object:
 		self.is_arranged = None
 	
 
-	# Define a Function to check if Final pose is close to Current pose
-	def is_pose_final_pose(self):
-		np.allclose(self.pose, self.final_pose, rtol = 0.01, atol = 0.01)
+	# Define a Function to check if Current pose is close to Final pose
+	def is_pose_at_final_pose(self):
+		self.is_arranged = np.allclose(self.pose, self.final_pose, rtol = 0.01, atol = 0.01)
+		return self.is_arranged
 
 
 	# Define a Function to Display Class members
@@ -95,6 +96,26 @@ class Objects:
 				
 				# If Key is Final Pose, Return Final Pose
 				elif key == "Final_Pose":	return object.final_pose
+
+	
+	# Define a Function to check if Chairs are Arranged around Table
+	def is_chairs_arranged(self):
+
+		# For every Object
+		for object in self.objects:
+
+			# Only if its a Chair
+			if "Chair" in object.name:
+
+				# If Chair is not Arranged
+				if not object.is_arranged:
+
+					# Return False
+					return False
+		
+		# Else Return True when its Arranged
+		return True
+	
 
 	# Define a Function to Display all Objects
 	def display(self):
@@ -210,3 +231,14 @@ def get_translation_and_rotation_from_pose(pose, angle):
 
 	# Return Translation and Rotation
 	return translation, rotation
+
+
+# Define a Function to Compute the Absolute Distance from Relative Pose
+def compute_distance_from_pose(pose):
+
+	# Extract the Translation vector
+	translation = [pose[0][3], pose[1][3], pose[2][3]]
+
+	# Compute and Return the Distance
+	distance = np.linalg.norm(translation)
+	return distance

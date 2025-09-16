@@ -6,6 +6,7 @@ import utils
 import time
 
 # Import Necessary Libraries
+import numpy as np
 import cv2
 
 
@@ -32,6 +33,50 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     
     # Return the Poses of Cameras and Objects
     return poses_of_cameras, objects
+
+
+# Define a Function to get the Chair that has to be Arranged
+def get_chair_to_arrange(objects, pose_of_spot_body_frame):
+
+    # Initialise Minimum Distance
+    min_distance = 100
+
+    # For every Object in Scene
+    for object in objects.objects:
+
+        # If its a Chair
+        if "Chair" in object.name:
+
+            # Get the Relative Pose of Chair wrt SPOT Body frame
+            pose_of_chair_wrt_spot_frame = np.linalg.inv(pose_of_spot_body_frame) @ object.pose
+
+            # Get the Absolute Distance between Chair and SPOT Robot
+            distance_of_chair_from_spot = utils.compute_distance_from_pose(pose_of_chair_wrt_spot_frame)
+
+            # If Current Distance is lesser than Minimum Distance
+            if distance_of_chair_from_spot < min_distance:
+
+                # Save Current chair as Chair to be Arranged
+                chair_to_arrange = object
+                min_distance = distance_of_chair_from_spot
+    
+    # Return Chair to be Arranged
+    return chair_to_arrange
+
+
+# Define a Function to Arrange Chairs around a Table
+def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
+
+    # Until Chairs are Arranged around Table
+    print("Arranging Chairs around Table... \n")
+    while not objects.is_chairs_arranged():
+
+        # Get the Chair that has to be Arranged around Table
+        chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
+        print(chair_to_arrange)
+    
+    # Display Success Message
+    print("Chairs Arranged around Table Successfully!!! \n")
 
 
 # Define the Main Function
@@ -73,10 +118,19 @@ def main():
                                                                                             objects, poses_of_cameras, aruco_type, 
                                                                                             camera_calibration_params
                                                                                       )
+            
+            # If Chairs are Arranged around Table
+            if objects.is_chairs_arranged():
+                print("All Chairs are Arranged around Table... \n")
 
-            # Quit when Q key is Pressed
-            if cv2.waitKey(1) == ord('q'):
-                break
+            # Else, Prompt User for Input
+            else:
+                print("Chairs not Arranged... Press y to Begin Arranging Chairs: \n")
+                time.sleep(2)
+
+                # If y Key is Pressed, Begin Arranging
+                if cv2.waitKey(1) == ord('y'):             
+                    arrange_chairs_around_table(objects, pose_of_spot_body_frame)
         
     # Stop streaming finally
     finally:
