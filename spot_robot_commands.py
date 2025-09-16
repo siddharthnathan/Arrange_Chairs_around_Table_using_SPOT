@@ -122,6 +122,14 @@ class DetectFiducial(object):
                 # Store the Pose of AruCo tag wrt SPOT Body frame
                 aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_spot_data(fiducial_wrt_spot_body)
 
+                # Update Pose of AruCo tag by Rotating -90 deg along Z-axis
+                aruco_tag_wrt_spot_body_frame['Pose'] = aruco_tag_wrt_spot_body_frame['Pose'] @ np.array([
+                                                                                                            [ 0, -1,  0,  0],
+                                                                                                            [ 1,  0,  0,  0],
+                                                                                                            [ 0,  0,  1,  0],
+                                                                                                            [ 0,  0,  0,  1]
+                                                                                                         ])
+
                 # Append into List of Fiducials detected
                 aruco_tags_wrt_spot_body_frame.append(aruco_tag_wrt_spot_body_frame)
         

@@ -95,6 +95,7 @@ def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_para
                                                                                 rotation = list(rvecs[i][0]), 
                                                                                 angle = False
                                                                               )                                         # Pose of AruCo tag with Red-square at Top-Left
+            '''
             aruco_tag_pose['Pose'] = aruco_tag_pose['Pose'] @ np.array([
                                                                             [ 0,  1,  0,  0],
                                                                             [-1,  0,  0,  0],
@@ -102,7 +103,7 @@ def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_para
                                                                             [ 0,  0,  0,  1]
                                                                        ])                                               # Pose of AruCo tag with Red-sqaure at Top-Right
                                                                                                                         # since SPOT also estimates pose in same way
-
+            '''
             # Draw Pose axes in the AruCo tag image
             cv2.aruco.drawDetectedMarkers(frame, corners)
             cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvecs[i], tvecs[i], 0.1)

@@ -15,13 +15,13 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     # Compute the Poses of both Cameras using the Initial Images from both cameras
     initial_images = [cv2.imread('aruco_markers_for_origins_image_1.jpg'), cv2.imread('aruco_markers_for_origins_image_2.jpg')]
     poses_of_cameras = pose_estimation.get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params)
-
+    
     # Get the Object mapping with their AruCo IDs
     objects_with_aruco_ids = utils.read_mapping_of_objects()
 
     # Initialise Objects in Scene with their AruCo ID, Name, Poses
     objects = utils.Objects(objects_with_aruco_ids)
-
+    
     # Update the Poses of Origins AruCo markers using Initial Images from both cameras
     initial_images = [cv2.imread('aruco_markers_for_origins_image_1.jpg'), cv2.imread('aruco_markers_for_origins_image_2.jpg')]
     objects = pose_estimation.update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
@@ -29,13 +29,17 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
     final_images = [cv2.imread('aruco_markers_for_chairs_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_image_2.jpg')]
     objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
-
+    
     # Return the Poses of Cameras and Objects
     return poses_of_cameras, objects
 
 
 # Define the Main Function
 def main():
+
+    # Configure SPOT Robot and make it Stand
+    robot = spot_robot_commands.setup_and_configure_robot()
+    spot_robot_commands.make_SPOT_stand(robot)
 
     # Define the type of AruCo marker used in Environment
     aruco_type = cv2.aruco.DICT_APRILTAG_36h11
@@ -48,8 +52,7 @@ def main():
 
     # Set Poses of Objects at Initial and Final Configuration
     poses_of_cameras, objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
-    objects.display()
-    
+
     # Try block
     try:
 
@@ -61,7 +64,7 @@ def main():
             camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
 
             # Get the Pose of AruCo tags wrt SPOT Body Frame
-            aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial.detect_aruco_tags_wrt_spot_body_frame()
+            aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
 
             # Update the Poses of AruCo markers using Images from both cameras
             objects, pose_of_spot_body_frame = pose_estimation.update_poses_of_objects(
@@ -79,7 +82,7 @@ def main():
     finally:
         camera_1_pipeline.stop()
         camera_2_pipeline.stop()
-    
+
 
 # Invoke the Main Function
 if __name__ == "__main__":
