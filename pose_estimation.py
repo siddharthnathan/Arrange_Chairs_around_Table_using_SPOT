@@ -5,11 +5,11 @@ import utils
 import cv2
 
 
-# Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - down, Y - right)
+# Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - right, Y - up)
 pose_of_grasp_location_wrt_aruco_on_chair = np.array([
-                                                        [ 1,  0,  0, -0.3400],
-                                                        [ 0, -1,  0, -0.1000],
-                                                        [ 0,  0, -1, -0.0350],
+                                                        [ 0, -1,  0,  0.1000],
+                                                        [-1,  0,  0,  0.3000],
+                                                        [ 0,  0, -1, -0.0500],
                                                         [ 0,  0,  0,  1.0000]
                                                     ])
 
@@ -129,14 +129,14 @@ def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
     origin_pose_wrt_camera_2 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, 'Origin')
 
     # Compute the Pose of Camera 1 & Camera 2 wrt Origin
-    camera_1_pose = np.array(utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_1), 3))
-    camera_2_pose = np.array(utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3))
+    camera_1_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_1), 3)
+    camera_2_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3)
 
     # Return the Poses of Cameras wrt Origin
     return [camera_1_pose, camera_2_pose]
 
 
-# Define a Function to Update Pose of Objects in scene
+# Define a Function to Update Pose of Origins in scene
 def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
@@ -169,7 +169,7 @@ def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_typ
     return objects
 
 
-# Define a Function to Update Final Pose of Objects in scene
+# Define a Function to Update Final Pose of Chairs in scene
 def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
@@ -224,7 +224,7 @@ def localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects):
         elif "Chair" not in object_name:
             
             # Get the Pose of Non-Origin marker wrt Origin marker
-            pose_of_object = objects.get_value_of_object_using_key(aruco_id, "Pose")
+            pose_of_object = objects.get_value_of_object_using_key(aruco_id, "Final_Pose")
 
             # Return the Pose of SPOT body frame wrt Origin
             return pose_of_object @ utils.round_matrix_list(np.linalg.inv(aruco_tag_data_wrt_spot_frame['Pose']), 3)

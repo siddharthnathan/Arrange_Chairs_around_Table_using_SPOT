@@ -75,18 +75,10 @@ class DetectFiducial(object):
         self._robot_command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         self._world_object_client = robot.ensure_client(WorldObjectClient.default_service_name)
 
-        # Dictionary mapping camera source to it's latest image taken
-        self._image = dict()
-
     # Define a Function to get the Latest Robot state proto
     @property
     def robot_state(self):
         return self._robot_state_client.get_robot_state()
-
-    # Define a Function to Get Current Image from their source
-    @property
-    def image(self):
-        return self._image
 
     # Define a Function to Detect Fiducials wrt SPOT Body frame
     def detect_aruco_tags_wrt_spot_body_frame(self):

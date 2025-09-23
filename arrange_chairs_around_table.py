@@ -67,17 +67,20 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
 # Define a Function to Arrange Chairs around a Table
 def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
 
+    print(pose_of_spot_body_frame)
+    objects.display()
+    
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
     while not objects.is_chairs_arranged():
 
         # Get the Chair that has to be Arranged around Table
         chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
-        print(chair_to_arrange)
+        print(chair_to_arrange.aruco_id)
     
     # Display Success Message
     print("Chairs Arranged around Table Successfully!!! \n")
-
+    
 
 # Define the Main Function
 def main():
@@ -118,19 +121,14 @@ def main():
                                                                                             objects, poses_of_cameras, aruco_type, 
                                                                                             camera_calibration_params
                                                                                       )
-            
+
             # If Chairs are Arranged around Table
             if objects.is_chairs_arranged():
                 print("All Chairs are Arranged around Table... \n")
 
-            # Else, Prompt User for Input
+            # Else, Begin Arranging Chairs   
             else:
-                print("Chairs not Arranged... Press y to Begin Arranging Chairs: \n")
-                time.sleep(2)
-
-                # If y Key is Pressed, Begin Arranging
-                if cv2.waitKey(1) == ord('y'):             
-                    arrange_chairs_around_table(objects, pose_of_spot_body_frame)
+                arrange_chairs_around_table(objects, pose_of_spot_body_frame)
         
     # Stop streaming finally
     finally:

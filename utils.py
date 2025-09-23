@@ -37,25 +37,30 @@ class Object:
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
 		self.name = name
+		self.pose = None
 
 		# If Object name is Origin
 		if "Origin" in self.name:
-			self.pose = np.identity(4)
 			self.final_pose = np.identity(4)
 		
 		# Else if Object name is not Origin
 		else:
-			self.pose = None
 			self.final_pose = None
 		
-		# Initialise arranged flag as None
-		self.is_arranged = None
-	
 
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
-		self.is_arranged = np.allclose(self.pose, self.final_pose, rtol = 0.01, atol = 0.01)
-		return self.is_arranged
+
+		# For every Element in Pose matrix
+		for i in range(4):
+			for j in range(4):
+
+				# If Deviation exceeds threshold limit, assign False
+				if abs(self.pose[i][j] - self.final_pose[i][j]) > 0.05:
+					return False
+
+		# Else, Return True
+		return True
 
 
 	# Define a Function to Display Class members
@@ -92,10 +97,12 @@ class Objects:
 			if object.aruco_id == aruco_id:
 
 				# If Key is Current Pose, Return Current Pose
-				if key == "Pose":	return object.pose
+				if key == "Pose":	
+					return object.pose
 				
 				# If Key is Final Pose, Return Final Pose
-				elif key == "Final_Pose":	return object.final_pose
+				elif key == "Final_Pose":	
+					return object.final_pose
 
 	
 	# Define a Function to check if Chairs are Arranged around Table
@@ -108,7 +115,7 @@ class Objects:
 			if "Chair" in object.name:
 
 				# If Chair is not Arranged
-				if not object.is_arranged:
+				if not object.is_pose_at_final_pose():
 
 					# Return False
 					return False
@@ -156,14 +163,17 @@ def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 	# Get the AruCo ID corresponding to the Object name
 	aruco_id = list(object_mapping.keys())[list(object_mapping.values()).index(object_name)]
 
-	# For every AruCo tag detected in frame
-	for aruco_tag_data_wrt_frame in aruco_tags_data_wrt_frame:
+	# If there are AruCo tags detected in the Frame
+	if aruco_tags_data_wrt_frame is not None:
 
-		# If AruCo ID matches given ID
-		if aruco_id == aruco_tag_data_wrt_frame['ID']:
+		# For every AruCo tag detected in frame
+		for aruco_tag_data_wrt_frame in aruco_tags_data_wrt_frame:
 
-			# Return the Pose of that AruCo marker
-			return np.array(aruco_tag_data_wrt_frame['Pose'])
+			# If AruCo ID matches given ID
+			if aruco_id == aruco_tag_data_wrt_frame['ID']:
+
+				# Return the Pose of that AruCo marker
+				return aruco_tag_data_wrt_frame['Pose']
 	
 	# Return None if not found
 	return None
