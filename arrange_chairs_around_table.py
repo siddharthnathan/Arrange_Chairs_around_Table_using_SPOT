@@ -26,7 +26,7 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     # Update the Poses of Origins AruCo markers using Initial Images from both cameras
     initial_images = [cv2.imread('aruco_markers_for_origins_image_1.jpg'), cv2.imread('aruco_markers_for_origins_image_2.jpg')]
     objects = pose_estimation.update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
-    
+
     # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
     final_images = [cv2.imread('aruco_markers_for_chairs_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_image_2.jpg')]
     objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
@@ -66,9 +66,6 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
 
 # Define a Function to Arrange Chairs around a Table
 def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
-
-    print(pose_of_spot_body_frame)
-    objects.display()
     
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
@@ -76,7 +73,6 @@ def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
 
         # Get the Chair that has to be Arranged around Table
         chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
-        print(chair_to_arrange.aruco_id)
     
     # Display Success Message
     print("Chairs Arranged around Table Successfully!!! \n")
@@ -129,12 +125,12 @@ def main():
             # Else, Begin Arranging Chairs   
             else:
                 arrange_chairs_around_table(objects, pose_of_spot_body_frame)
-        
+
     # Stop streaming finally
     finally:
         camera_1_pipeline.stop()
         camera_2_pipeline.stop()
-
+    
 
 # Invoke the Main Function
 if __name__ == "__main__":

@@ -157,13 +157,13 @@ def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_typ
             if pose_of_object_wrt_camera_1_frame is not None:
 
                 # Update Pose of Object wrt Origin AruCo tag
-                objects.objects[i].final_pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
+                objects.objects[i].final_pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame, 3)
             
             # If Object is detected by Camera 2
             else:
 
                 # Update Pose of Object wrt Origin AruCo tag
-                objects.objects[i].final_pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
+                objects.objects[i].final_pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame, 3)
 
     # Return the Objects with updated Poses
     return objects
@@ -190,13 +190,13 @@ def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, 
             if pose_of_chair_wrt_camera_1_frame is not None:
 
                 # Update Final Pose of Chair wrt Origin AruCo tag
-                objects.objects[i].final_pose = poses_of_cameras[0] @ pose_of_chair_wrt_camera_1_frame
+                objects.objects[i].final_pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_chair_wrt_camera_1_frame, 3)
             
             # If Chair is detected by Camera 2
             else:
 
                 # Update Final Pose of Chair wrt Origin AruCo tag
-                objects.objects[i].final_pose = poses_of_cameras[1] @ pose_of_chair_wrt_camera_2_frame
+                objects.objects[i].final_pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_chair_wrt_camera_2_frame, 3)
 
     # Return the Objects with updated Poses
     return objects
@@ -255,19 +255,19 @@ def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, pos
             if pose_of_object_wrt_camera_1_frame is not None:
 
                 # Update Pose of Object wrt Origin AruCo tag
-                objects.objects[i].pose = poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame
+                objects.objects[i].pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_object_wrt_camera_1_frame, 3)
             
             # If Object is detected by Camera 2
             elif pose_of_object_wrt_camera_2_frame is not None:
 
                 # Update Pose of Object wrt Origin AruCo tag
-                objects.objects[i].pose = poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame
+                objects.objects[i].pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_object_wrt_camera_2_frame, 3)
             
             # If Object is detected by SPOT
             elif pose_of_object_wrt_spot_frame is not None:
                 
                 # Update Pose of Object wrt Origin AruCo tag
-                objects.objects[i].pose = pose_of_spot_body_frame @ pose_of_object_wrt_spot_frame
+                objects.objects[i].pose = utils.round_matrix_list(pose_of_spot_body_frame @ pose_of_object_wrt_spot_frame, 3)
             
             # Else if Object is not Detected
             else:
