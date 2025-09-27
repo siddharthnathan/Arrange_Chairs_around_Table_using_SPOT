@@ -11,6 +11,9 @@ import bosdyn.client.lease
 import bosdyn.client.util
 import bosdyn.client
 
+# Import Necessary Scripts
+import pose_estimation
+
 # Import Necessary Libraries
 import numpy as np
 import utils
@@ -170,8 +173,54 @@ def open_or_close_gripper(robot, action):
         time.sleep(1)
     
 
-# Define a Function to Move SPOT arm to given Pose
-def move_arm_to_pose(robot, pose):
+# Define a Function to Move arm to Default Pose
+def move_arm_to_default_pose(robot):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
+
+    # Create required Robot clients
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+
+        # Bring the Arm back to Initial Configuration
+        gripper_initial_config = RobotCommandBuilder.arm_stow_command()
+        command = RobotCommandBuilder.build_synchro_command(gripper_initial_config)
+
+        # Send the Request
+        move_command_id = command_client.robot_command(command)
+        robot.logger.info('Moving arm to default pose')
+        time.sleep(3)
+
+
+# Define a Function to Move SPOT to a given Pose
+def move_robot_to_location(robot, pose):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
+
+    # Define Clients to Read Images
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+
+    # Get the Translation and Rotation from Pose
+    translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
+    
+    # Until Lease is kept alive
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+        
+        # Create a Command Client
+        command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+        # Define the Command and send the Request
+        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = translation[0], v_y = translation[1], v_rot = np.deg2rad(rotation[2]))
+        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
+
+
+# Define a Function to Move SPOT arm to Grasp Pose
+def move_arm_to_grasp_pose(robot, pose):
 
     # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
     assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
@@ -206,7 +255,7 @@ def move_arm_to_pose(robot, pose):
         # Define the Arm Command
         arm_command = RobotCommandBuilder.arm_pose_command(
             odom_T_hand.x, odom_T_hand.y, odom_T_hand.z, odom_T_hand.rot.w, odom_T_hand.rot.x,
-            odom_T_hand.rot.y, odom_T_hand.rot.z, ODOM_FRAME_NAME, 10)
+            odom_T_hand.rot.y, odom_T_hand.rot.z, ODOM_FRAME_NAME, 5)
         
         # Tell the robot's body to follow the arm
         follow_arm_command = RobotCommandBuilder.follow_arm_command()
@@ -217,64 +266,28 @@ def move_arm_to_pose(robot, pose):
         # Send the request
         move_command_id = command_client.robot_command(command)
         robot.logger.info('Moving arm to given pose')
-        block_until_arm_arrives(command_client, move_command_id)
+        time.sleep(5 * np.linalg.norm(translation))
 
 
-# Define a Function to Move arm to Default Pose
-def move_arm_to_default_pose(robot):
+# Define a Function to Grasp Chair by its Seat from above using SPOT gripper
+def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
 
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
+    # Compute the Grasp Pose of Chair wrt SPOT
+    grasp_pose_wrt_spot = pose_estimation.compute_grasp_pose(pose_of_chair_wrt_spot)
 
-    # Create required Robot clients
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-
-    # Until Lease exists
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-
-        # Bring the Arm back to Initial Configuration
-        gripper_initial_config = RobotCommandBuilder.arm_stow_command()
-        command = RobotCommandBuilder.build_synchro_command(gripper_initial_config)
-
-        # Send the Request
-        move_command_id = command_client.robot_command(command)
-        robot.logger.info('Moving arm to default pose')
-        block_until_arm_arrives(command_client, move_command_id)
-
-
-# Define a Function to Move SPOT to a given Pose
-def move_robot_to_location(robot, pose):
-
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client such as the estop SDK example, to configure E-Stop.'
-
-    # Define Clients to Read Images
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-
-    # Get the Translation and Rotation from Pose
-    translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
-    
-    # Until Lease is kept alive
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-        
-        # Create a Command Client
-        command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-
-        # Define the Command and send the Request
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = translation[0], v_y = translation[1], v_rot = np.deg2rad(rotation[2]))
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-
-
-# Define a Function to Move Robot gripper to Grasp Chair
-def move_arm_to_grasp_chair(robot, pose):
-
-    # Open arm gripper first
+    # Open Gripper
     open_or_close_gripper(robot, action = 'open')
 
-    # Move arm to Grasp pose
-    move_arm_to_pose(robot, pose)
-    
-    # Close arm gripper to grasp chair
-    open_or_close_gripper(robot, action = 'close')
-    return True
+    # Move Arm to Grasp Pose above a safe Height
+    move_arm_to_grasp_pose(robot, grasp_pose_wrt_spot)
+
+    # Move Arm down to Grasp Chair
+    move_arm_to_grasp_pose(robot, grasp_pose_wrt_spot @ np.array([
+                                                                    [  1,  0,  0,  0   ],
+                                                                    [  0,  1,  0,  0   ],
+                                                                    [  0,  0,  1, -0.03],
+                                                                    [  0,  0,  0,  1   ]
+                                                                ]))
+
+    # Close the Gripper
+    open_or_close_gripper(robot, action = 'close')    

@@ -6,12 +6,12 @@ import cv2
 
 
 # Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - right, Y - up)
-pose_of_grasp_location_wrt_aruco_on_chair = np.array([
-                                                        [ 0, -1,  0,  0.1000],
-                                                        [-1,  0,  0,  0.3000],
-                                                        [ 0,  0, -1, -0.0500],
-                                                        [ 0,  0,  0,  1.0000]
-                                                    ])
+grasp_pose_location_wrt_aruco_on_chair = np.array([
+                                                    [ 0, -1,  0, -0.0150],
+                                                    [-1,  0,  0,  0.7000],
+                                                    [ 0,  0, -1, -0.0700],
+                                                    [ 0,  0,  0,  1.0000]
+                                                 ])
 
 
 # Define a Function to Account for the Offset in Grasp pose wrt SPOT
@@ -275,3 +275,23 @@ def update_poses_of_objects(images, aruco_tags_data_wrt_spot_frame, objects, pos
 
     # Return the Objects with updated Poses alongwith SPOT body frame pose
     return objects, pose_of_spot_body_frame
+
+
+# Define a Function to Compute Grasp Pose to Grasp Chair
+def compute_grasp_pose(pose_of_chair_wrt_spot):
+
+    # Extract Translation vector for AruCo marker on Chair wrt SPOT
+    x, y, z = pose_of_chair_wrt_spot[0][3], pose_of_chair_wrt_spot[1][3], pose_of_chair_wrt_spot[2][3]
+    
+    # Update Pose of AruCo on Chair wrt SPOT Robot
+    pose_of_chair_wrt_spot = np.array([
+                                            [ 0,  0, -1,  x],
+                                            [-1,  0,  0,  y],
+                                            [ 0,  1,  0,  z],
+                                            [ 0,  0,  0,  1]
+                                      ])
+    
+    # Compute and Return the Grasp Pose of Chair wrt SPOT
+    grasp_pose_wrt_spot = pose_of_chair_wrt_spot @ grasp_pose_location_wrt_aruco_on_chair
+    return grasp_pose_wrt_spot
+    
