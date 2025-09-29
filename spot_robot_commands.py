@@ -216,8 +216,8 @@ def move_robot_to_location(robot, pose):
 
         # Define the Command and send the Request
         cmd = RobotCommandBuilder.synchro_velocity_command(v_x = translation[0], v_y = translation[1], v_rot = np.deg2rad(rotation[2]))
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1)
-
+        command_client.robot_command(cmd, end_time_secs = time.time() + 1.5 * np.linalg.norm(translation))
+        
 
 # Define a Function to Move SPOT arm to Grasp Pose
 def move_arm_to_grasp_pose(robot, pose):
@@ -291,3 +291,26 @@ def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
 
     # Close the Gripper
     open_or_close_gripper(robot, action = 'close')    
+
+
+# Define a Function to Move SPOT Robot behind Chair
+def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
+
+    # Initialise the Pose where SPOT must be wrt AruCo on Chair (1m behind Chair)
+    destination_pose_of_spot_wrt_chair = np.array([
+                                                    [  1,  0,  0,  0  ],
+                                                    [  0,  1,  0,  0  ],
+                                                    [  0,  0,  1,  1  ],
+                                                    [  0,  0,  0,  1  ]
+                                                 ])
+    
+    # Compute the Pose that SPOT needs to move
+    pose_to_move = pose_of_chair_wrt_spot @ destination_pose_of_spot_wrt_chair @ np.array([
+                                                                                            [  0, -1,  0,  0  ],
+                                                                                            [  0,  0,  1,  0  ],
+                                                                                            [ -1,  0,  0,  0  ],
+                                                                                            [  0,  0,  0,  1  ]
+                                                                                         ])
+
+    # Move SPOT to the given Pose
+    move_robot_to_location(robot, pose_to_move)
