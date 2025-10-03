@@ -7,9 +7,9 @@ import cv2
 
 # Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - right, Y - up)
 grasp_pose_location_wrt_aruco_on_chair = np.array([
-                                                    [ 0, -1,  0, -0.0150],
-                                                    [-1,  0,  0,  0.7000],
-                                                    [ 0,  0, -1, -0.0700],
+                                                    [ 0, -1,  0,  0.0000],
+                                                    [-1,  0,  0,  0.4000],
+                                                    [ 0,  0, -1, -0.0580],
                                                     [ 0,  0,  0,  1.0000]
                                                  ])
 

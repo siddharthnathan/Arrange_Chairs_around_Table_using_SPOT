@@ -64,8 +64,25 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
     return chair_to_arrange
 
 
+# Define a Function to Arrange Chair around Table
+def arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange):
+
+    # Compute the Pose of AruCo on Chair wrt SPOT body frame
+    pose_of_chair_wrt_spot = np.linalg.inv(pose_of_spot_body_frame) @ chair_to_arrange.pose
+
+    # Move Robot behind Chair
+    spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
+
+    # Get the Pose of AruCo tag on Chair wrt SPOT Body Frame
+    aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
+    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, chair_to_arrange.name)
+
+    # Grasp Chair using Robot
+    spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
+
+
 # Define a Function to Arrange Chairs around a Table
-def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
+def arrange_chairs_around_table(robot, objects, pose_of_spot_body_frame):
     
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
@@ -73,6 +90,9 @@ def arrange_chairs_around_table(objects, pose_of_spot_body_frame):
 
         # Get the Chair that has to be Arranged around Table
         chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
+
+        # Arrange the Chair that has to be Arranged
+        arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
     
     # Display Success Message
     print("Chairs Arranged around Table Successfully!!! \n")
@@ -124,7 +144,7 @@ def main():
 
             # Else, Begin Arranging Chairs   
             else:
-                arrange_chairs_around_table(objects, pose_of_spot_body_frame)
+                arrange_chairs_around_table(robot, objects, pose_of_spot_body_frame)
 
     # Stop streaming finally
     finally:

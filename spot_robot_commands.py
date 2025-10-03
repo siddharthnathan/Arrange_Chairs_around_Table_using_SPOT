@@ -1,6 +1,7 @@
 # Import Necessary Bosdyn Libraries
 from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, block_until_arm_arrives
+from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.client.world_object import WorldObjectClient
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.api import geometry_pb2, world_object_pb2
@@ -169,8 +170,7 @@ def open_or_close_gripper(robot, action):
         
         # Send the Request
         command = RobotCommandBuilder.build_synchro_command(gripper_command)
-        cmd_id = command_client.robot_command(command)
-        time.sleep(1)
+        command_client.robot_command(command, end_time_secs = time.time() + 1)
     
 
 # Define a Function to Move arm to Default Pose
@@ -191,9 +191,8 @@ def move_arm_to_default_pose(robot):
         command = RobotCommandBuilder.build_synchro_command(gripper_initial_config)
 
         # Send the Request
-        move_command_id = command_client.robot_command(command)
+        command_client.robot_command(command, end_time_secs = time.time() + 3)
         robot.logger.info('Moving arm to default pose')
-        time.sleep(3)
 
 
 # Define a Function to Move SPOT to a given Pose
@@ -215,8 +214,13 @@ def move_robot_to_location(robot, pose):
         command_client = robot.ensure_client(RobotCommandClient.default_service_name)
 
         # Define the Command and send the Request
-        cmd = RobotCommandBuilder.synchro_velocity_command(v_x = translation[0], v_y = translation[1], v_rot = np.deg2rad(rotation[2]))
-        command_client.robot_command(cmd, end_time_secs = time.time() + 1.5 * np.linalg.norm(translation))
+        cmd = RobotCommandBuilder.synchro_trajectory_command_in_body_frame(
+                                                                            translation[0], translation[1], np.deg2rad(rotation[2]), 
+                                                                            robot.get_frame_tree_snapshot(), params = None, body_height = 0, 
+                                                                            locomotion_hint = spot_command_pb2.HINT_AUTO, 
+                                                                            build_on_command = None
+                                                                          )
+        command_client.robot_command(cmd, end_time_secs = time.time() + 10)
         
 
 # Define a Function to Move SPOT arm to Grasp Pose
@@ -263,10 +267,10 @@ def move_arm_to_grasp_pose(robot, pose):
         # Combine the arm and mobility commands into one synchronized command
         command = RobotCommandBuilder.build_synchro_command(follow_arm_command, arm_command)
 
-        # Send the request
-        move_command_id = command_client.robot_command(command)
-        robot.logger.info('Moving arm to given pose')
-        time.sleep(5 * np.linalg.norm(translation))
+        # Send the request and wait for Robot to Grasp Chair
+        cmd_id = command_client.robot_command(command)
+        robot.logger.info('Moving Arm to Grasp Chair')
+        time.sleep(5)
 
 
 # Define a Function to Grasp Chair by its Seat from above using SPOT gripper
@@ -280,17 +284,9 @@ def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
 
     # Move Arm to Grasp Pose above a safe Height
     move_arm_to_grasp_pose(robot, grasp_pose_wrt_spot)
-
-    # Move Arm down to Grasp Chair
-    move_arm_to_grasp_pose(robot, grasp_pose_wrt_spot @ np.array([
-                                                                    [  1,  0,  0,  0   ],
-                                                                    [  0,  1,  0,  0   ],
-                                                                    [  0,  0,  1, -0.03],
-                                                                    [  0,  0,  0,  1   ]
-                                                                ]))
-
+    
     # Close the Gripper
-    open_or_close_gripper(robot, action = 'close')    
+    open_or_close_gripper(robot, action = 'close')
 
 
 # Define a Function to Move SPOT Robot behind Chair
@@ -298,7 +294,7 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
 
     # Initialise the Pose where SPOT must be wrt AruCo on Chair (1m behind Chair)
     destination_pose_of_spot_wrt_chair = np.array([
-                                                    [  1,  0,  0,  0  ],
+                                                    [  1,  0,  0, -0.2],
                                                     [  0,  1,  0,  0  ],
                                                     [  0,  0,  1,  1  ],
                                                     [  0,  0,  0,  1  ]
@@ -314,3 +310,4 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
 
     # Move SPOT to the given Pose
     move_robot_to_location(robot, pose_to_move)
+    time.sleep(1)
