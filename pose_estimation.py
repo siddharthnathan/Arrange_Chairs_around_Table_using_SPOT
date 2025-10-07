@@ -9,7 +9,7 @@ import cv2
 grasp_pose_location_wrt_aruco_on_chair = np.array([
                                                     [ 0, -1,  0,  0.0000],
                                                     [-1,  0,  0,  0.4000],
-                                                    [ 0,  0, -1, -0.0580],
+                                                    [ 0,  0, -1, -0.0300],
                                                     [ 0,  0,  0,  1.0000]
                                                  ])
 

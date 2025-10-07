@@ -80,22 +80,22 @@ def arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
     # Grasp Chair using Robot
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
 
+    # Compute the Relative Pose of Final Pose wrt Current Pose of Chair and Move Chair
+    pose_to_move_chair = np.linalg.inv(chair_to_arrange.pose) @ chair_to_arrange.final_pose
+    spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
+
 
 # Define a Function to Arrange Chairs around a Table
 def arrange_chairs_around_table(robot, objects, pose_of_spot_body_frame):
     
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
-    while not objects.is_chairs_arranged():
 
-        # Get the Chair that has to be Arranged around Table
-        chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
+    # Get the Chair that has to be Arranged around Table
+    chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
 
-        # Arrange the Chair that has to be Arranged
-        arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
-    
-    # Display Success Message
-    print("Chairs Arranged around Table Successfully!!! \n")
+    # Arrange the Chair that has to be Arranged
+    arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
     
 
 # Define the Main Function

@@ -221,7 +221,7 @@ def move_robot_to_location(robot, pose):
                                                                             build_on_command = None
                                                                           )
         command_client.robot_command(cmd, end_time_secs = time.time() + 10)
-        
+
 
 # Define a Function to Move SPOT arm to Grasp Pose
 def move_arm_to_grasp_pose(robot, pose):
@@ -273,6 +273,25 @@ def move_arm_to_grasp_pose(robot, pose):
         time.sleep(5)
 
 
+# Define a Function to Freeze arm Joints
+def freeze_arm_joints(robot):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
+
+    # Create required Robot clients
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+
+        # Freeze Arm Joints and Send the Request
+        command = RobotCommandBuilder.arm_joint_freeze_command()
+        command_client.robot_command(command, end_time_secs = time.time() + 2)
+        time.sleep(2)
+
+
 # Define a Function to Grasp Chair by its Seat from above using SPOT gripper
 def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
 
@@ -287,6 +306,9 @@ def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
     
     # Close the Gripper
     open_or_close_gripper(robot, action = 'close')
+
+    # Freeze Arm Joints
+    freeze_arm_joints(robot)
 
 
 # Define a Function to Move SPOT Robot behind Chair
