@@ -28,6 +28,15 @@ def main():
     # Grasp Chair using Robot
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
 
+    # Move Chair to given Pose
+    pose = np.array([
+                        [ 1,  0,  0,  0.20],
+                        [ 0,  1,  0,  0.00],
+                        [ 0,  0,  1,  0.00],
+                        [ 0,  0,  0,  1.00]
+                    ])
+    spot_robot_commands.move_robot_to_location(robot, pose)
+
 
 # Invoke the Main Function
 if __name__ == "__main__":
