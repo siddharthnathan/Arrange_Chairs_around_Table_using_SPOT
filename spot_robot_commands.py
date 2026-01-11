@@ -1,7 +1,6 @@
 # Import Necessary Bosdyn Libraries
 from bosdyn.client.frame_helpers import (BODY_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME, ODOM_FRAME_NAME, get_a_tform_b)
-from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, block_until_arm_arrives
-from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
+from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
 from bosdyn.client.world_object import WorldObjectClient
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.api import geometry_pb2, world_object_pb2
@@ -119,12 +118,13 @@ class DetectFiducial(object):
                 aruco_tag_wrt_spot_body_frame['Pose'] = utils.compute_pose_from_spot_data(fiducial_wrt_spot_body)
 
                 # Update Pose of AruCo tag by Rotating -90 deg along Z-axis
-                aruco_tag_wrt_spot_body_frame['Pose'] = aruco_tag_wrt_spot_body_frame['Pose'] @ np.array([
-                                                                                                            [ 0, -1,  0,  0],
-                                                                                                            [ 1,  0,  0,  0],
-                                                                                                            [ 0,  0,  1,  0],
-                                                                                                            [ 0,  0,  0,  1]
-                                                                                                         ])
+                aruco_tag_wrt_spot_body_frame['Pose'] = utils.round_matrix_list(
+                                                                                    aruco_tag_wrt_spot_body_frame['Pose'] @ np.array([
+                                                                                                                                        [ 0, -1,  0,  0],
+                                                                                                                                        [ 1,  0,  0,  0],
+                                                                                                                                        [ 0,  0,  1,  0],
+                                                                                                                                        [ 0,  0,  0,  1]
+                                                                                                                                     ]), 3)
 
                 # Append into List of Fiducials detected
                 aruco_tags_wrt_spot_body_frame.append(aruco_tag_wrt_spot_body_frame)
@@ -162,15 +162,16 @@ def open_or_close_gripper(robot, action):
 
         # Make the open/close gripper RobotCommand
         if action == 'open':
-            gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
+            gripper_command = RobotCommandBuilder.claw_gripper_open_command()
             robot.logger.info('Opening Gripper')
         elif action == 'close':
-            gripper_command = RobotCommandBuilder.claw_gripper_open_fraction_command(0.0)
+            gripper_command = RobotCommandBuilder.claw_gripper_close_command()
             robot.logger.info('Closing Gripper')
         
         # Send the Request
         command = RobotCommandBuilder.build_synchro_command(gripper_command)
         command_client.robot_command(command, end_time_secs = time.time() + 1)
+        time.sleep(2)
     
 
 # Define a Function to Move arm to Default Pose
@@ -206,6 +207,8 @@ def move_robot_to_location(robot, pose):
 
     # Get the Translation and Rotation from Pose
     translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
+    print(translation)
+    print(rotation)
     
     # Until Lease is kept alive
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
@@ -217,7 +220,7 @@ def move_robot_to_location(robot, pose):
         cmd = RobotCommandBuilder.synchro_trajectory_command_in_body_frame(
                                                                             translation[0], translation[1], np.deg2rad(rotation[2]), 
                                                                             robot.get_frame_tree_snapshot(), params = None, body_height = 0, 
-                                                                            locomotion_hint = spot_command_pb2.HINT_AUTO, 
+                                                                            locomotion_hint = None, 
                                                                             build_on_command = None
                                                                           )
         command_client.robot_command(cmd, end_time_secs = time.time() + 10)
@@ -268,8 +271,8 @@ def move_arm_to_grasp_pose(robot, pose):
         command = RobotCommandBuilder.build_synchro_command(follow_arm_command, arm_command)
 
         # Send the request and wait for Robot to Grasp Chair
-        cmd_id = command_client.robot_command(command)
         robot.logger.info('Moving Arm to Grasp Chair')
+        command_client.robot_command(command, end_time_secs = time.time() + 5)
         time.sleep(5)
 
 
@@ -288,6 +291,25 @@ def freeze_arm_joints(robot):
 
         # Freeze Arm Joints and Send the Request
         command = RobotCommandBuilder.arm_joint_freeze_command()
+        command_client.robot_command(command, end_time_secs = time.time() + 2)
+        time.sleep(2)
+    
+
+# Define a Function to Unfreeze arm Joints
+def unfreeze_arm_joints(robot):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
+
+    # Create required Robot clients
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+
+        # Unfreeze Arm Joints and Send the Request
+        command = RobotCommandBuilder.arm_stow_command()
         command_client.robot_command(command, end_time_secs = time.time() + 2)
         time.sleep(2)
 
@@ -323,12 +345,13 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
                                                  ])
     
     # Compute the Pose that SPOT needs to move
-    pose_to_move = pose_of_chair_wrt_spot @ destination_pose_of_spot_wrt_chair @ np.array([
-                                                                                            [  0, -1,  0,  0  ],
-                                                                                            [  0,  0,  1,  0  ],
-                                                                                            [ -1,  0,  0,  0  ],
-                                                                                            [  0,  0,  0,  1  ]
-                                                                                         ])
+    pose_to_move = utils.round_matrix_list(
+                                            pose_of_chair_wrt_spot @ destination_pose_of_spot_wrt_chair @ np.array([
+                                                                                                                        [  0, -1,  0,  0  ],
+                                                                                                                        [  0,  0,  1,  0  ],
+                                                                                                                        [ -1,  0,  0,  0  ],
+                                                                                                                        [  0,  0,  0,  1  ]
+                                                                                                                    ]), 3)
 
     # Move SPOT to the given Pose
     move_robot_to_location(robot, pose_to_move)

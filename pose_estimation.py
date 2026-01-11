@@ -9,7 +9,7 @@ import cv2
 grasp_pose_location_wrt_aruco_on_chair = np.array([
                                                     [ 0, -1,  0, -0.0000],
                                                     [-1,  0,  0,  0.4000],
-                                                    [ 0,  0, -1, -0.0250],
+                                                    [ 0,  0, -1, -0.0100],
                                                     [ 0,  0,  0,  1.0000]
                                                  ])
 
@@ -227,7 +227,7 @@ def localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects):
             pose_of_object = objects.get_value_of_object_using_key(aruco_id, "Final_Pose")
 
             # Return the Pose of SPOT body frame wrt Origin
-            return pose_of_object @ utils.round_matrix_list(np.linalg.inv(aruco_tag_data_wrt_spot_frame['Pose']), 3)
+            return utils.round_matrix_list(pose_of_object @ np.linalg.inv(aruco_tag_data_wrt_spot_frame['Pose']), 3)
 
 
 # Define a Function to Update Poses of Objects wrt Camera frame and SPOT frame
@@ -292,6 +292,6 @@ def compute_grasp_pose(pose_of_chair_wrt_spot):
                                       ])
     
     # Compute and Return the Grasp Pose of Chair wrt SPOT
-    grasp_pose_wrt_spot = pose_of_chair_wrt_spot @ grasp_pose_location_wrt_aruco_on_chair
+    grasp_pose_wrt_spot = utils.round_matrix_list(pose_of_chair_wrt_spot @ grasp_pose_location_wrt_aruco_on_chair, 3)
     return grasp_pose_wrt_spot
     

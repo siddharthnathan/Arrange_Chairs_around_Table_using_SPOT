@@ -51,13 +51,12 @@ class Object:
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
 
-		# For every Element in Pose matrix
-		for i in range(4):
-			for j in range(4):
+		# Calculate the Frobenius norm of the difference
+		frobenius_distance = np.linalg.norm(self.pose - self.final_pose, 'fro')
 
-				# If Deviation exceeds threshold limit, assign False
-				if abs(self.pose[i][j] - self.final_pose[i][j]) > 0.05:
-					return False
+		# If Frobenius norm of the difference exceeds threshold limit, assign False
+		if frobenius_distance > 0.5:
+			return False
 
 		# Else, Return True
 		return True

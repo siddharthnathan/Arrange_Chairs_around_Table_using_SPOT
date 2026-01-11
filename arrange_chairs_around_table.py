@@ -48,7 +48,7 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
         if "Chair" in object.name:
 
             # Get the Relative Pose of Chair wrt SPOT Body frame
-            pose_of_chair_wrt_spot_frame = np.linalg.inv(pose_of_spot_body_frame) @ object.pose
+            pose_of_chair_wrt_spot_frame = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ object.pose, 3)
 
             # Get the Absolute Distance between Chair and SPOT Robot
             distance_of_chair_from_spot = utils.compute_distance_from_pose(pose_of_chair_wrt_spot_frame)
@@ -64,11 +64,27 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
     return chair_to_arrange
 
 
+# Define a Function to Let go of Chair after Arranging around Table
+def let_go_of_chair(robot):
+
+    # Unfreeze Arm Joints
+    spot_robot_commands.unfreeze_arm_joints(robot)
+
+    # Open Arm Gripper
+    spot_robot_commands.open_or_close_gripper(robot, action = 'open')
+
+    # Bring Arm back to Default Pose
+    spot_robot_commands.move_arm_to_default_pose(robot)
+
+    # Close Arm Gripper
+    spot_robot_commands.open_or_close_gripper(robot, action = 'close')
+
+
 # Define a Function to Arrange Chair around Table
 def arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange):
 
     # Compute the Pose of AruCo on Chair wrt SPOT body frame
-    pose_of_chair_wrt_spot = np.linalg.inv(pose_of_spot_body_frame) @ chair_to_arrange.pose
+    pose_of_chair_wrt_spot = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ chair_to_arrange.pose, 3)
 
     # Move Robot behind Chair
     spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
@@ -81,8 +97,11 @@ def arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
 
     # Compute the Relative Pose of Final Pose wrt Current Pose of Chair and Move Chair
-    pose_to_move_chair = np.linalg.inv(chair_to_arrange.pose) @ chair_to_arrange.final_pose
+    pose_to_move_chair = utils.round_matrix_list(np.linalg.inv(chair_to_arrange.pose) @ chair_to_arrange.final_pose, 3)
     spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
+
+    # Let go of the Chair after Arranging
+    let_go_of_chair(robot)
 
 
 # Define a Function to Arrange Chairs around a Table
