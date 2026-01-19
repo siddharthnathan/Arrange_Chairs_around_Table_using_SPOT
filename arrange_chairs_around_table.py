@@ -3,7 +3,6 @@ import spot_robot_commands
 import read_video_stream
 import pose_estimation
 import utils
-import time
 
 # Import Necessary Libraries
 import numpy as np
@@ -31,6 +30,12 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     final_images = [cv2.imread('aruco_markers_for_chairs_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_image_2.jpg')]
     objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
     
+    # Compute the Pose of Table using Final Poses of Chairs in Scene
+    objects = objects.compute_pose_of_table()
+
+    # Compute the Pose of Waypoints using Final Poses of Chairs in Scene and Pose of Table
+    objects = objects.compute_poses_of_waypoints()
+
     # Return the Poses of Cameras and Objects
     return poses_of_cameras, objects
 
@@ -41,24 +46,21 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
     # Initialise Minimum Distance
     min_distance = 100
 
-    # For every Object in Scene
-    for object in objects.objects:
+    # For every Chair in Scene
+    for object in objects.chairs:
 
-        # If its a Chair
-        if "Chair" in object.name:
+        # Get the Relative Pose of Chair wrt SPOT Body frame
+        pose_of_chair_wrt_spot_frame = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ object.pose, 3)
 
-            # Get the Relative Pose of Chair wrt SPOT Body frame
-            pose_of_chair_wrt_spot_frame = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ object.pose, 3)
+        # Get the Absolute Distance between Chair and SPOT Robot
+        distance_of_chair_from_spot = utils.compute_distance_from_pose(pose_of_chair_wrt_spot_frame)
 
-            # Get the Absolute Distance between Chair and SPOT Robot
-            distance_of_chair_from_spot = utils.compute_distance_from_pose(pose_of_chair_wrt_spot_frame)
+        # If Current Distance is lesser than Minimum Distance
+        if distance_of_chair_from_spot < min_distance:
 
-            # If Current Distance is lesser than Minimum Distance
-            if distance_of_chair_from_spot < min_distance:
-
-                # Save Current chair as Chair to be Arranged
-                chair_to_arrange = object
-                min_distance = distance_of_chair_from_spot
+            # Save Current chair as Chair to be Arranged
+            chair_to_arrange = object
+            min_distance = distance_of_chair_from_spot
     
     # Return Chair to be Arranged
     return chair_to_arrange
@@ -135,6 +137,7 @@ def main():
 
     # Set Poses of Objects at Initial and Final Configuration
     poses_of_cameras, objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
+    objects.display()
 
     # Try block
     try:

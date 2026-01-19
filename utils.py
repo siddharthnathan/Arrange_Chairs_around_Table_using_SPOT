@@ -1,6 +1,7 @@
 # Import Necessary Libraries
 from scipy.spatial.transform import Rotation as R
 import numpy as np
+import math
 import cv2
 
 
@@ -81,43 +82,152 @@ class Objects:
 		
 		# Initialise Objects in Scene
 		self.objects_with_aruco_ids = objects_with_aruco_ids
-		self.objects = []
+		self.chairs = []
+		self.walls = []
+		self.waypoints = []
+
+		# Define Range scale wrt Distance between Chairs
+		self.scale_of_range = 3
+
+		# Define the Number of Waypoints and Angle between Waypoints in Scene
+		self.num_of_waypoints = 6
+		self.angle_bw_waypoints = 2 * np.pi / self.num_of_waypoints
+		
+		# For every Object with ArUco IDs
 		for key, val in objects_with_aruco_ids.items():
-			self.objects.append(Object(aruco_id = key, name = val))
+
+			# If Object is Chair
+			if "Chair" in val:
+				self.chairs.append(Object(aruco_id = key, name = val))
+			
+			# Else if Object is not Chair (AruCo on Walls)
+			else:
+				self.walls.append(Object(aruco_id = key, name = val))
+					
+	
+	# Define a Function to Compute the Pose of Table using Final pose of Chairs
+	def compute_pose_of_table(self):
+
+		# Initialise Table Object
+		self.table = Object(aruco_id = None, name = "Table")
+
+		# Initialise Translation and Rotation arrays of Chairs
+		translation_of_chairs = []
+		rotation_of_chairs = []
+
+		# For every Chair object
+		for chair in self.chairs:
+
+			# Store the Translation and Rotation components of Chairs
+			translation, rotation = get_translation_and_rotation_from_pose(chair.final_pose, angle = True)
+			translation_of_chairs.append(translation)
+			rotation_of_chairs.append(rotation)
+
+		# Compute the Translation and Rotation component of Table by taking Mean
+		translation_of_table = np.mean(translation_of_chairs, axis = 0)
+		rotation_of_table = np.mean(rotation_of_chairs, axis = 0)
+		rotation_of_table = [0, rotation_of_table[1], 0]
+
+		# Compute the Pose of Table
+		self.table.final_pose = compute_pose_from_vectors_or_angles(translation_of_table, rotation_of_table, angle = True)
+
+		# Return the Updated object with Table data
+		return self
 	
 	
-	# Define a Function to get the Pose of Object using AruCo ID
-	def get_value_of_object_using_key(self, aruco_id, key):
+	# Define a Function to Compute the Pose of Waypoints using Pose of Table
+	def compute_poses_of_waypoints(self):
 
-		# For every Object in Objects
-		for object in self.objects:
+		# Retrieve the Poses of Chairs in scene
+		pose_of_chair_1, pose_of_chair_2 = self.get_pose_of_chair("Chair_1"), self.get_pose_of_chair("Chair_2")
+		pose_of_chair_3, pose_of_chair_4 = self.get_pose_of_chair("Chair_3"), self.get_pose_of_chair("Chair_4")
+		
+		# Compute the Average Distance between Chairs
+		distance_bw_chairs = round(np.mean([compute_distance_between_poses(pose_of_chair_1, pose_of_chair_2), 
+									  		compute_distance_between_poses(pose_of_chair_3, pose_of_chair_4)]), 3)
 
-			# If Object ID matches given AruCo ID
-			if object.aruco_id == aruco_id:
+		# Create Object for Waypoint 1 (South of Table)
+		waypoint_1 = Object(aruco_id = None, name = "Waypoint_1")
 
-				# If Key is Current Pose, Return Current Pose
-				if key == "Pose":	
-					return object.pose
+		# Determine Pose of Waypoint 1 using Pose of Table and Scale Range around Table wrt SPOT body frame
+		waypoint_1.final_pose = self.table.final_pose @ compute_pose_from_vectors_or_angles(translation = [0, 0, self.scale_of_range * distance_bw_chairs],
+														   		 				   			rotation = [0, 90, 90], angle = True)
+		self.waypoints.append(waypoint_1)
+
+		# For every remaining Waypoints
+		for i in range(self.num_of_waypoints - 1):
+
+			# Create Object for Waypoint
+			waypoint = Object(aruco_id = None, name = "Waypoint_" + str(i+2))
+
+			# Determine the Pose of Waypoint using Pose of Table, Scale Range around Table and Angle inscribed around Table
+			waypoint.final_pose = self.compute_pose_of_waypoint(waypoint_1, angle = self.angle_bw_waypoints * (i+1))
+
+			# Append Waypoint data
+			self.waypoints.append(waypoint)
+
+		# Return the Updated object with Waypoints data
+		return self
+
+
+	# Define a Function to Determine the Pose of Waypoint using Pose of Table, Scale Range around Table and Angle inscribed around Table wrt SPOT body frame
+	def compute_pose_of_waypoint(self, waypoint, angle):
+
+		# Get the Pose of Table and Waypoint
+		pose_of_table, pose_of_waypoint = self.table.final_pose, waypoint.final_pose
+		
+		# Compute the Relative pose of Waypoint wrt Table
+		relative_pose_of_waypoint = np.linalg.inv(pose_of_table) @ pose_of_waypoint
+		distance_of_relative_pose = compute_distance_from_pose(relative_pose_of_waypoint)
+		
+		# Compute the Pose of Waypoint and Return
+		s, c = math.sin(angle), math.cos(angle)
+		return round_matrix_list(pose_of_table @ compute_pose_from_vectors_or_angles(translation = [-s * distance_of_relative_pose, 0, c * distance_of_relative_pose],
+														 	   				   		 rotation = [0, 90-angle, 90], angle = True) @ np.array([
+																																				[ c,  s,  0,  0],
+																																				[-s,  c,  0,  0],
+																																				[ 0,  0,  1,  0],
+																																				[ 0,  0,  0,  1]
+																					 														]), 3)
+
+
+	# Define a Function to get the Pose of Wall using Name
+	def get_pose_of_wall(self, name):
+
+		# For every Wall Object
+		for object in self.walls:
+
+			# If Object Name matches given Name
+			if object.name == name:
 				
-				# If Key is Final Pose, Return Final Pose
-				elif key == "Final_Pose":	
-					return object.final_pose
+				# Return Final Pose
+				return object.final_pose
+	
 
+	# Define a Function to get the Pose of Chair using Name
+	def get_pose_of_chair(self, name):
+
+		# For every Chair Object
+		for object in self.chairs:
+
+			# If Object Name matches given Name
+			if object.name == name:
+				
+				# Return Final Pose
+				return object.final_pose
+	
 	
 	# Define a Function to check if Chairs are Arranged around Table
 	def is_chairs_arranged(self):
 
-		# For every Object
-		for object in self.objects:
+		# For every Chair
+		for object in self.chairs:
 
-			# Only if its a Chair
-			if "Chair" in object.name:
+			# If Chair is not Arranged
+			if not object.is_pose_at_final_pose():
 
-				# If Chair is not Arranged
-				if not object.is_pose_at_final_pose():
-
-					# Return False
-					return False
+				# Return False
+				return False
 		
 		# Else Return True when its Arranged
 		return True
@@ -125,11 +235,24 @@ class Objects:
 
 	# Define a Function to Display all Objects
 	def display(self):
+		
+		# Display Data for every Wall
+		print("----- ArUco on Walls -----\n")
+		for object in self.walls:
+			object.display()
+		
+		# Display Data for every Chair
+		print("----- ArUco on Chairs -----\n")
+		for object in self.chairs:
+			object.display()
+		
+		# Display Data for Table
+		print("----- Pose of Table -----\n")
+		self.table.display()
 
-		# For every Object
-		for object in self.objects:
-
-			# Display Data for that Object
+		# Display Data for Waypoints
+		print("----- Pose of Waypoints -----\n")
+		for object in self.waypoints:
 			object.display()
 
 
@@ -250,4 +373,14 @@ def compute_distance_from_pose(pose):
 
 	# Compute and Return the Distance
 	distance = np.linalg.norm(translation)
-	return distance
+	return round(distance, 3)
+
+
+# Define a Function to Compute the Distance a Pose wrt Reference Pose
+def compute_distance_between_poses(pose, reference_pose):
+
+	# Compute the Relative pose
+	relative_pose = round_matrix_list(np.linalg.inv(reference_pose) @ pose, 3)
+
+	# Return the Distance of Pose
+	return compute_distance_from_pose(relative_pose)

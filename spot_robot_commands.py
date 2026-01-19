@@ -207,8 +207,6 @@ def move_robot_to_location(robot, pose):
 
     # Get the Translation and Rotation from Pose
     translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
-    print(translation)
-    print(rotation)
     
     # Until Lease is kept alive
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
