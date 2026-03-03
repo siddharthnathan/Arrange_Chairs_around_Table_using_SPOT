@@ -222,6 +222,7 @@ def move_robot_to_location(robot, pose):
                                                                             build_on_command = None
                                                                           )
         command_client.robot_command(cmd, end_time_secs = time.time() + 10)
+    time.sleep(2)
 
 
 # Define a Function to Move SPOT arm to Grasp Pose
@@ -353,4 +354,4 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
 
     # Move SPOT to the given Pose
     move_robot_to_location(robot, pose_to_move)
-    time.sleep(1)
+    time.sleep(2)

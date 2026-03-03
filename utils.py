@@ -33,30 +33,46 @@ def read_mapping_of_objects():
 class Object:
 
 	# Define the Init Function
-	def __init__(self, aruco_id, name):
+	def __init__(self, aruco_id, name, final_pose = None):
 				
 		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
 		self.aruco_id = aruco_id
 		self.name = name
+		self.final_pose = final_pose
 		self.pose = None
 
 		# If Object name is Origin
 		if "Origin" in self.name:
 			self.final_pose = np.identity(4)
 		
-		# Else if Object name is not Origin
-		else:
-			self.final_pose = None
+		# Set Arranged flag as True
+		self.is_arranged = True
+
+		# Initialise Chair Displacement from Final pose
+		self.displacement = None
+
+		# Initialise Translation and Rotation threshold
+		self.min_translation_threshold = 0.1
+		self.max_translation_threshold = 1
+		self.rotation_threshold = 10
 		
 
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
 
-		# Calculate the Frobenius norm of the difference
-		frobenius_distance = np.linalg.norm(self.pose - self.final_pose, 'fro')
+		# Get the Displacement matrix of Chair wrt Final pose
+		self.displacement = np.linalg.inv(self.final_pose) @ self.pose
 
-		# If Frobenius norm of the difference exceeds threshold limit, assign False
-		if frobenius_distance > 0.5:
+		# Extract the Displacement Translation and Rotation of Chair
+		translation, rotation = get_translation_and_rotation_from_pose(self.displacement, angle = True)
+		x, _, z = translation
+		_, ry, _ = rotation
+		self.displacement = [x, z, ry]
+
+		# If the Difference exceeds a threshold, Return False
+		if abs(x) > self.min_translation_threshold and abs(x) < self.max_translation_threshold \
+			or abs(z) > self.min_translation_threshold and abs(z) < self.max_translation_threshold \
+			or abs(ry) > self.rotation_threshold:
 			return False
 
 		# Else, Return True
@@ -69,8 +85,20 @@ class Object:
 		# Display Class Members
 		print("AruCo ID: ", self.aruco_id)
 		print("Name: ", self.name)
-		print("Pose:\n", self.pose)
-		print("Final_Pose:\n", self.final_pose)
+		
+		# Display Translation and Rotation if Current pose is not None
+		if self.pose is not None:
+			translation, rotation = get_translation_and_rotation_from_pose(self.pose, angle = True)
+			print("Pose:")
+			print("Translation: ", translation)
+			print("Rotation: ", rotation)
+		
+		# Display Translation and Rotation if Final pose is not None
+		if self.final_pose is not None:
+			translation, rotation = get_translation_and_rotation_from_pose(self.final_pose, angle = True)
+			print("Final_Pose:")
+			print("Translation: ", translation)
+			print("Rotation: ", rotation)
 		print("\n")
 			
 
@@ -82,12 +110,13 @@ class Objects:
 		
 		# Initialise Objects in Scene
 		self.objects_with_aruco_ids = objects_with_aruco_ids
+		self.cameras = []
 		self.chairs = []
 		self.walls = []
 		self.waypoints = []
 
 		# Define Range scale wrt Distance between Chairs
-		self.scale_of_range = 3
+		self.scale_of_range = 2.5
 
 		# Define the Number of Waypoints and Angle between Waypoints in Scene
 		self.num_of_waypoints = 6
@@ -121,12 +150,12 @@ class Objects:
 			# Store the Translation and Rotation components of Chairs
 			translation, rotation = get_translation_and_rotation_from_pose(chair.final_pose, angle = True)
 			translation_of_chairs.append(translation)
-			rotation_of_chairs.append(rotation)
+			if chair.name == "Chair_1" or chair.name == "Chair_2":
+				rotation_of_chairs.append(rotation[1])
 
 		# Compute the Translation and Rotation component of Table by taking Mean
 		translation_of_table = np.mean(translation_of_chairs, axis = 0)
-		rotation_of_table = np.mean(rotation_of_chairs, axis = 0)
-		rotation_of_table = [0, rotation_of_table[1], 0]
+		rotation_of_table = [0, -90 - np.mean(rotation_of_chairs), 0]
 
 		# Compute the Pose of Table
 		self.table.final_pose = compute_pose_from_vectors_or_angles(translation_of_table, rotation_of_table, angle = True)
@@ -141,10 +170,9 @@ class Objects:
 		# Retrieve the Poses of Chairs in scene
 		pose_of_chair_1, pose_of_chair_2 = self.get_pose_of_chair("Chair_1"), self.get_pose_of_chair("Chair_2")
 		pose_of_chair_3, pose_of_chair_4 = self.get_pose_of_chair("Chair_3"), self.get_pose_of_chair("Chair_4")
-		
+
 		# Compute the Average Distance between Chairs
-		distance_bw_chairs = round(np.mean([compute_distance_between_poses(pose_of_chair_1, pose_of_chair_2), 
-									  		compute_distance_between_poses(pose_of_chair_3, pose_of_chair_4)]), 3)
+		distance_bw_chairs = round(np.mean([compute_distance_between_poses(pose_of_chair_1, pose_of_chair_2), compute_distance_between_poses(pose_of_chair_3, pose_of_chair_4)]), 3)
 
 		# Create Object for Waypoint 1 (South of Table)
 		waypoint_1 = Object(aruco_id = None, name = "Waypoint_1")
@@ -189,7 +217,18 @@ class Objects:
 																																				[ 0,  0,  1,  0],
 																																				[ 0,  0,  0,  1]
 																					 														]), 3)
+	# Define a Function to get the Pose of Camera using Name
+	def get_pose_of_camera(self, name):
 
+		# For every Camera Object
+		for object in self.cameras:
+
+			# If Object Name matches given Name
+			if object.name == name:
+				
+				# Return Final Pose
+				return object.final_pose
+			
 
 	# Define a Function to get the Pose of Wall using Name
 	def get_pose_of_wall(self, name):
@@ -217,8 +256,11 @@ class Objects:
 				return object.final_pose
 	
 	
-	# Define a Function to check if Chairs are Arranged around Table
-	def is_chairs_arranged(self):
+	# Define a Function to get Chairs that are Unarranged around Table
+	def get_unarranged_chairs(self):
+
+		# Initialise Unarranged chairs
+		unarranged_chairs = []
 
 		# For every Chair
 		for object in self.chairs:
@@ -226,15 +268,31 @@ class Objects:
 			# If Chair is not Arranged
 			if not object.is_pose_at_final_pose():
 
-				# Return False
-				return False
-		
-		# Else Return True when its Arranged
-		return True
+				# Set Arranged flag to False
+				object.is_arranged = False
+
+				# Append chair to Unarranged chairs list
+				unarranged_chairs.append(object)
+
+		# Display Details
+		if len(unarranged_chairs) == 0:
+			print("Unarranged Chairs: None")
+		else:
+			print("Unarranged Chairs: ")
+			for chair in unarranged_chairs:
+				print(chair.name, ": ", chair.displacement)
+
+		# Return the List of Unarranged chairs
+		return unarranged_chairs		
 	
 
 	# Define a Function to Display all Objects
 	def display(self):
+
+		# Display Data for every Camera
+		print("----- ArUco on Cameras -----\n")
+		for object in self.cameras:
+			object.display()
 		
 		# Display Data for every Wall
 		print("----- ArUco on Walls -----\n")
@@ -361,7 +419,9 @@ def get_translation_and_rotation_from_pose(pose, angle):
 	else:
 		rotation = rotation.as_quat()
 
-	# Return Translation and Rotation
+	# Approximate and Return Translation and Rotation
+	translation = round_float_list(translation, 3)
+	rotation = round_float_list(rotation, 3)
 	return translation, rotation
 
 

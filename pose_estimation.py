@@ -7,7 +7,7 @@ import cv2
 
 # Define the Pose of Grasp location (Seatrest from above: X - down, Y - left) wrt AruCo on Chair (Seatrest behind chair: X - right, Y - up)
 grasp_pose_location_wrt_aruco_on_chair = np.array([
-                                                    [ 0, -1,  0, -0.0000],
+                                                    [ 0, -1,  0,  0.0000],
                                                     [-1,  0,  0,  0.4000],
                                                     [ 0,  0, -1, -0.0100],
                                                     [ 0,  0,  0,  1.0000]
@@ -118,34 +118,39 @@ def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_para
 
 
 # Define a Function to Compute the Poses of both Cameras wrt Origin
-def get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params):
+def get_poses_of_cameras(objects, initial_images, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(initial_images[0], aruco_type, camera_calibration_params['Camera_1']) 
     aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(initial_images[1], aruco_type, camera_calibration_params['Camera_2'])
 
     # Get the Pose of Origin wrt Camera 1 and Camera 2
-    origin_pose_wrt_camera_1 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, 'Origin')
-    origin_pose_wrt_camera_2 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, 'Origin')
+    right_wall_2_pose_wrt_camera_1 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, 'Right_Wall_2')
+    left_wall_1_pose_wrt_camera_2 = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, 'Left_Wall_1')
 
     # Compute the Pose of Camera 1 & Camera 2 wrt Origin
-    camera_1_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_1), 3)
-    camera_2_pose = utils.round_matrix_list(np.linalg.inv(origin_pose_wrt_camera_2), 3)
+    camera_1_pose = objects.get_pose_of_wall('Right_Wall_2') @ np.linalg.inv(right_wall_2_pose_wrt_camera_1)
+    camera_2_pose = objects.get_pose_of_wall('Left_Wall_1') @ np.linalg.inv(left_wall_1_pose_wrt_camera_2)
+    camera_1_pose = utils.round_matrix_list(camera_1_pose, 3)
+    camera_2_pose = utils.round_matrix_list(camera_2_pose, 3)
+
+    # Create Camera object and Append
+    camera_1 = utils.Object(aruco_id = None, name = "Camera_1", final_pose = camera_1_pose)
+    camera_2 = utils.Object(aruco_id = None, name = "Camera_2", final_pose = camera_2_pose)
+    objects.cameras.append(camera_1)
+    objects.cameras.append(camera_2)
 
     # Return the Poses of Cameras wrt Origin
-    return [camera_1_pose, camera_2_pose]
+    return objects
 
 
 # Define a Function to Update Pose of Origins in scene
-def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
-
-    # Get the Pose of AruCo tags wrt both Cameras
-    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(initial_images[0], aruco_type, camera_calibration_params['Camera_1']) 
-    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(initial_images[1], aruco_type, camera_calibration_params['Camera_2'])
+def update_poses_of_origins(objects):
 
     # For every ArUco marker on Wall
     for i in range(len(objects.walls)):
 
+        '''
         # If ArUco marker is not Origin
         if "Origin" not in objects.walls[i].name:
 
@@ -156,21 +161,55 @@ def update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_typ
             # If Object is detected by Camera 1
             if pose_of_wall_wrt_camera_1_frame is not None:
 
-                # Update Pose of Wall wrt Origin AruCo tag
-                objects.walls[i].final_pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_wall_wrt_camera_1_frame, 3)
+                # Calculate Pose of Wall wrt Origin AruCo tag
+                pose_of_wall = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_wall_wrt_camera_1_frame, 3)
             
             # If Object is detected by Camera 2
             else:
 
-                # Update Pose of Wall wrt Origin AruCo tag
-                objects.walls[i].final_pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_wall_wrt_camera_2_frame, 3)
+                # Calculate Pose of Wall wrt Origin AruCo tag
+                pose_of_wall = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_wall_wrt_camera_2_frame, 3)
+
+            # Extract Translation and Rotation from pose
+            translation, rotation = utils.get_translation_and_rotation_from_pose(pose_of_wall, angle = True)
+
+            # Update Pose of Wall into Objects
+            objects.walls[i].final_pose = utils.compute_pose_from_vectors_or_angles(translation, rotation, angle = True)
+        '''
+        # If its Left_Wall_1
+        if objects.walls[i].name == 'Left_Wall_1':
+            translation = [-2.286, 0.1524, 4.6355]
+            rotation = [0, 90, 0]
+        
+        # If its Left_Wall_2
+        elif objects.walls[i].name == 'Left_Wall_2':
+            translation = [-2.5146, 0.0762, 2.1463]
+            rotation = [0, 90, 0]
+        
+        # If its Right_Wall_1
+        elif objects.walls[i].name == 'Right_Wall_1':
+            translation = [2.972, 0.05715, 1.3462]
+            rotation = [0, -90, 0]
+
+        # If its Right_Wall_2
+        elif objects.walls[i].name == 'Right_Wall_2':
+            translation = [2.972, 0.03175, 2.5654]
+            rotation = [0, -90, 0]
+        
+        # If its Origin
+        else:
+            translation = [0, 0, 0]
+            rotation = [0, 0, 0]
+        
+        # Update Pose of Wall into Objects
+        objects.walls[i].final_pose = utils.compute_pose_from_vectors_or_angles(translation, rotation, angle = True)
 
     # Return the Objects with updated Poses
     return objects
 
 
 # Define a Function to Update Final Pose of Chairs in scene
-def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+def update_final_poses_of_chairs(images, objects, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
@@ -187,13 +226,13 @@ def update_final_poses_of_chairs(images, objects, poses_of_cameras, aruco_type, 
         if pose_of_chair_wrt_camera_1_frame is not None:
 
             # Update Final Pose of Chair wrt Origin AruCo tag
-            objects.chairs[i].final_pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_chair_wrt_camera_1_frame, 3)
+            objects.chairs[i].final_pose = utils.round_matrix_list(objects.get_pose_of_camera('Camera_1') @ pose_of_chair_wrt_camera_1_frame, 3)
         
         # If Chair is detected by Camera 2
         else:
 
             # Update Final Pose of Chair wrt Origin AruCo tag
-            objects.chairs[i].final_pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_chair_wrt_camera_2_frame, 3)
+            objects.chairs[i].final_pose = utils.round_matrix_list(objects.get_pose_of_camera('Camera_2') @ pose_of_chair_wrt_camera_2_frame, 3)
 
     # Return the Objects with updated Poses
     return objects
@@ -228,7 +267,7 @@ def localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects):
 
 
 # Define a Function to Update Poses of Chairs wrt Camera frame and SPOT frame
-def update_poses_of_chairs(images, aruco_tags_data_wrt_spot_frame, objects, poses_of_cameras, aruco_type, camera_calibration_params):
+def update_poses_of_chairs(images, aruco_tags_data_wrt_spot_frame, objects, aruco_type, camera_calibration_params):
 
     # Get the Pose of AruCo tags wrt both Cameras
     aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
@@ -236,7 +275,7 @@ def update_poses_of_chairs(images, aruco_tags_data_wrt_spot_frame, objects, pose
 
     # Determine the Pose of SPOT body frame wrt Origin AruCo tag
     pose_of_spot_body_frame = localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
-
+            
     # For every Chair Object
     for i in range(len(objects.chairs)):
 
@@ -249,23 +288,19 @@ def update_poses_of_chairs(images, aruco_tags_data_wrt_spot_frame, objects, pose
         if pose_of_chair_wrt_camera_1_frame is not None:
 
             # Update Pose of Chair wrt Origin AruCo tag
-            objects.chairs[i].pose = utils.round_matrix_list(poses_of_cameras[0] @ pose_of_chair_wrt_camera_1_frame, 3)
+            objects.chairs[i].pose = utils.round_matrix_list(objects.get_pose_of_camera('Camera_1') @ pose_of_chair_wrt_camera_1_frame, 3)
         
         # If Chair is detected by Camera 2
         elif pose_of_chair_wrt_camera_2_frame is not None:
 
             # Update Pose of Chair wrt Origin AruCo tag
-            objects.chairs[i].pose = utils.round_matrix_list(poses_of_cameras[1] @ pose_of_chair_wrt_camera_2_frame, 3)
+            objects.chairs[i].pose = utils.round_matrix_list(objects.get_pose_of_camera('Camera_2') @ pose_of_chair_wrt_camera_2_frame, 3)
         
         # If Chair is detected by SPOT
         elif pose_of_chair_wrt_spot_frame is not None:
-            
+
             # Update Pose of Chair wrt Origin AruCo tag
             objects.chairs[i].pose = utils.round_matrix_list(pose_of_spot_body_frame @ pose_of_chair_wrt_spot_frame, 3)
-        
-        # Else if Object is not Detected
-        else:
-            objects.chairs[i].pose = None
 
     # Return the Objects with updated Poses alongwith SPOT body frame pose
     return objects, pose_of_spot_body_frame

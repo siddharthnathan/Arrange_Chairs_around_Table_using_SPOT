@@ -3,19 +3,17 @@ import spot_robot_commands
 import read_video_stream
 import pose_estimation
 import utils
+import math
 
 # Import Necessary Libraries
 import numpy as np
+import time
 import cv2
 
 
 # Define a Function to Set Poses of Objects at Initial and Final Configuration
 def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params):
 
-    # Compute the Poses of both Cameras using the Initial Images from both cameras
-    initial_images = [cv2.imread('aruco_markers_for_origins_image_1.jpg'), cv2.imread('aruco_markers_for_origins_image_2.jpg')]
-    poses_of_cameras = pose_estimation.get_poses_of_cameras(initial_images, aruco_type, camera_calibration_params)
-    
     # Get the Object mapping with their AruCo IDs
     objects_with_aruco_ids = utils.read_mapping_of_objects()
 
@@ -23,12 +21,15 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     objects = utils.Objects(objects_with_aruco_ids)
     
     # Update the Poses of Origins AruCo markers using Initial Images from both cameras
-    initial_images = [cv2.imread('aruco_markers_for_origins_image_1.jpg'), cv2.imread('aruco_markers_for_origins_image_2.jpg')]
-    objects = pose_estimation.update_poses_of_origins(initial_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
+    objects = pose_estimation.update_poses_of_origins(objects)
+
+    # Compute the Poses of both Cameras using the Initial Images from both cameras
+    initial_images = [cv2.imread('aruco_markers_for_chairs_and_origins_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_and_origins_image_2.jpg')]
+    objects = pose_estimation.get_poses_of_cameras(objects, initial_images, aruco_type, camera_calibration_params)
 
     # Update the Goal Configuration Poses of Chairs using Final Images from both cameras
-    final_images = [cv2.imread('aruco_markers_for_chairs_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_image_2.jpg')]
-    objects = pose_estimation.update_final_poses_of_chairs(final_images, objects, poses_of_cameras, aruco_type, camera_calibration_params)
+    initial_images = [cv2.imread('aruco_markers_for_chairs_and_origins_image_1.jpg'), cv2.imread('aruco_markers_for_chairs_and_origins_image_2.jpg')]
+    objects = pose_estimation.update_final_poses_of_chairs(initial_images, objects, aruco_type, camera_calibration_params)
     
     # Compute the Pose of Table using Final Poses of Chairs in Scene
     objects = objects.compute_pose_of_table()
@@ -36,21 +37,21 @@ def set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibratio
     # Compute the Pose of Waypoints using Final Poses of Chairs in Scene and Pose of Table
     objects = objects.compute_poses_of_waypoints()
 
-    # Return the Poses of Cameras and Objects
-    return poses_of_cameras, objects
+    # Return the Poses of Objects
+    return objects
 
 
 # Define a Function to get the Chair that has to be Arranged
-def get_chair_to_arrange(objects, pose_of_spot_body_frame):
+def get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame):
 
     # Initialise Minimum Distance
     min_distance = 100
 
     # For every Chair in Scene
-    for object in objects.chairs:
+    for chair in unarranged_chairs:
 
         # Get the Relative Pose of Chair wrt SPOT Body frame
-        pose_of_chair_wrt_spot_frame = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ object.pose, 3)
+        pose_of_chair_wrt_spot_frame = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ chair.pose, 3)
 
         # Get the Absolute Distance between Chair and SPOT Robot
         distance_of_chair_from_spot = utils.compute_distance_from_pose(pose_of_chair_wrt_spot_frame)
@@ -59,7 +60,7 @@ def get_chair_to_arrange(objects, pose_of_spot_body_frame):
         if distance_of_chair_from_spot < min_distance:
 
             # Save Current chair as Chair to be Arranged
-            chair_to_arrange = object
+            chair_to_arrange = chair
             min_distance = distance_of_chair_from_spot
     
     # Return Chair to be Arranged
@@ -85,39 +86,69 @@ def let_go_of_chair(robot):
 # Define a Function to Arrange Chair around Table
 def arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange):
 
+    print(utils.get_translation_and_rotation_from_pose(pose_of_spot_body_frame, angle = True))
+    print(utils.get_translation_and_rotation_from_pose(chair_to_arrange.pose, angle = True))
+
     # Compute the Pose of AruCo on Chair wrt SPOT body frame
     pose_of_chair_wrt_spot = utils.round_matrix_list(np.linalg.inv(pose_of_spot_body_frame) @ chair_to_arrange.pose, 3)
-
+    '''
     # Move Robot behind Chair
     spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
 
-    # Get the Pose of AruCo tag on Chair wrt SPOT Body Frame
+    # Get the Pose of AruCo tags wrt SPOT Body Frame
     aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, chair_to_arrange.name)
+    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_name = chair_to_arrange.name)
 
     # Grasp Chair using Robot
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
 
-    # Compute the Relative Pose of Final Pose wrt Current Pose of Chair and Move Chair
-    pose_to_move_chair = utils.round_matrix_list(np.linalg.inv(chair_to_arrange.pose) @ chair_to_arrange.final_pose, 3)
-    spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
+    # Transform Final pose and Current Pose of Chair wrt SPOT Frame
+    trans_final_pose = chair_to_arrange.final_pose @ np.array([
+                                                                    [ 0,     -1,    0,      0],
+                                                                    [ 0.402,  0,    0.915,  0],
+                                                                    [-0.915,  0,    0.402,  0],
+                                                                    [ 0,      0,    0,      1]
+                                                              ])
+    trans_current_pose = chair_to_arrange.pose @ np.array([
+                                                                [ 0,     -1,    0,      0],
+                                                                [ 0.402,  0,    0.915,  0],
+                                                                [-0.915,  0,    0.402,  0],
+                                                                [ 0,      0,    0,      1]
+                                                          ])
+    
+    # Compute Pose to move SPOT to Arrange Chair
+    pose_to_move_chair = utils.round_matrix_list(np.linalg.inv(trans_current_pose) @ trans_final_pose, num_decimal_places = 3)
+    translation, rotation = utils.get_translation_and_rotation_from_pose(pose_to_move_chair, angle = True)
+    x, y, _ = translation
+    _, _, rz = rotation
 
+    # Move SPOT to Arrange Chair
+    print("Moving SPOT by ", [x, y, rz])
+    spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
+    
     # Let go of the Chair after Arranging
     let_go_of_chair(robot)
 
+    # Move Robot behind Chair
+    pose = utils.compute_pose_from_vectors_or_angles(translation = [-1, 0, 0], rotation = [0, 0, 0], angle = True)
+    spot_robot_commands.move_robot_to_location(robot, pose)
+    '''
 
 # Define a Function to Arrange Chairs around a Table
-def arrange_chairs_around_table(robot, objects, pose_of_spot_body_frame):
+def arrange_chairs_around_table(robot, unarranged_chairs, pose_of_spot_body_frame):
     
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
 
     # Get the Chair that has to be Arranged around Table
-    chair_to_arrange = get_chair_to_arrange(objects, pose_of_spot_body_frame)
+    chair_to_arrange = get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame)
 
     # Arrange the Chair that has to be Arranged
+    print("Arranging ", chair_to_arrange.name)
+    time.sleep(2)
     arrange_chair_around_table(robot, pose_of_spot_body_frame, chair_to_arrange)
     
+
 
 # Define the Main Function
 def main():
@@ -136,9 +167,9 @@ def main():
     camera_1_pipeline, camera_2_pipeline = read_video_stream.configure_and_stream_pipeline()
 
     # Set Poses of Objects at Initial and Final Configuration
-    poses_of_cameras, objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
+    objects = set_poses_of_objects_at_start_and_final_states(aruco_type, camera_calibration_params)
     objects.display()
-
+    
     # Try block
     try:
 
@@ -151,22 +182,24 @@ def main():
 
             # Get the Pose of AruCo tags wrt SPOT Body Frame
             aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-
+            
             # Update the Poses of AruCo markers using Images from both cameras
-            objects, pose_of_spot_body_frame = pose_estimation.update_poses_of_objects(
+            objects, pose_of_spot_body_frame = pose_estimation.update_poses_of_chairs(
                                                                                             [camera_1_frame, camera_2_frame], 
                                                                                             aruco_tags_data_wrt_spot_frame, 
-                                                                                            objects, poses_of_cameras, aruco_type, 
-                                                                                            camera_calibration_params
-                                                                                      )
+                                                                                            objects, aruco_type, camera_calibration_params
+                                                                                     )
 
-            # If Chairs are Arranged around Table
-            if objects.is_chairs_arranged():
+            # Get Unarranged chairs around Table
+            unarranged_chairs = objects.get_unarranged_chairs()
+
+            # If all Chairs are Arranged around Table
+            if len(unarranged_chairs) == 0:
                 print("All Chairs are Arranged around Table... \n")
 
             # Else, Begin Arranging Chairs   
             else:
-                arrange_chairs_around_table(robot, objects, pose_of_spot_body_frame)
+                arrange_chairs_around_table(robot, unarranged_chairs, pose_of_spot_body_frame)
 
     # Stop streaming finally
     finally:

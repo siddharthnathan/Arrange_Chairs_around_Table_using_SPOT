@@ -17,24 +17,22 @@ def main():
     
     # Get the Pose of AruCo tags wrt SPOT Body Frame
     aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[9])
-    pose_of_origin = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[1])
-    pose_of_chair_1 = np.linalg.inv(pose_of_origin) @ pose_of_chair_wrt_spot
+    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[7])
 
     # Move Robot behind Chair
     spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
     
     # Get the Pose of AruCo tags wrt SPOT Body Frame
     aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[9])
+    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[7])
 
     # Grasp Chair using Robot
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
-
+    
     # Move Chair to given Pose
     c, s = math.cos(np.deg2rad(0)), math.sin(np.deg2rad(0))
     pose = np.array([
-                        [ c,  s,  0, -0.20],
+                        [ c,  s,  0,  0.10],
                         [-s,  c,  0,  0.00],
                         [ 0,  0,  1,  0.00],
                         [ 0,  0,  0,  1.00]
@@ -45,7 +43,7 @@ def main():
     spot_robot_commands.open_or_close_gripper(robot, action = 'open')
     spot_robot_commands.move_arm_to_default_pose(robot)
     spot_robot_commands.open_or_close_gripper(robot, action = 'close')
-    '''
+    
     # Move SPOT back 1m
     pose = np.array([
                         [ 1,  0,  0, -1.00],
@@ -54,15 +52,6 @@ def main():
                         [ 0,  0,  0,  1.00]
                     ])
     spot_robot_commands.move_robot_to_location(robot, pose)
-    
-    # Get the Pose of AruCo tags wrt SPOT Body Frame
-    aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[9])
-    pose_of_origin = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, object_mapping[1])
-    pose_of_chair_2 = np.linalg.inv(pose_of_origin) @ pose_of_chair_wrt_spot
-
-    print(np.linalg.inv(pose_of_chair_1) @ pose_of_chair_2)
-    '''
     
 
 # Invoke the Main Function
