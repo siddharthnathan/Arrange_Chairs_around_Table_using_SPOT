@@ -1,0 +1,109 @@
+{
+    "objects":
+    [
+        {
+            "id": "None",
+            "name": "Camera_1",
+            "translation": [-2.118, 0.252, 4.441],
+            "rotation": [180, -60, 0]
+        },
+
+        {
+            "id": "None",
+            "name": "Camera_2",
+            "translation": [3.225, 0.127, 4.530],
+            "rotation": [180, 60, 0]
+        },
+
+        {
+            "id": 1,
+            "name": "Origin_Wall",
+            "translation": [0, 0, 0],
+            "rotation": [0, 0, 0]
+        },
+
+        {
+            "id": 3,
+            "name": "Left_Wall_1",
+            "translation": [-2.120, 0.152, 4.581],
+            "rotation": [0, 90, 0]
+        },
+
+        {
+            "id": 2,
+            "name": "Left_Wall_2",
+            "translation": [-2.476, 0.066, 2.295],
+            "rotation": [0, 90, 0]
+        },
+
+        {
+            "id": 4,
+            "name": "Right_Wall_1",
+            "translation": [3.289, 0.050, 1.460],
+            "rotation": [0, -90, 0]
+        },
+
+        {
+            "id": 5,
+            "name": "Right_Wall_2",
+            "translation": [3.289, 0.050, 4.022],
+            "rotation": [0, -90, 0]
+        },
+
+        {
+            "id": 6,
+            "name": "Chair_1",
+            "translation": [-0.127, 0.082, 3.492],
+            "rotation": [0, -90, -19.2]
+        },
+
+        {
+            "id": 7,
+            "name": "Chair_2",
+            "translation": [-0.127, 0.082, 4.114],
+            "rotation": [0, -90, -19.2]
+        },
+
+        {
+            "id": 8,
+            "name": "Chair_3",
+            "translation": [1.009, 0.082, 4.314],
+            "rotation": [0, 90, 19.2]
+        },
+
+        {
+            "id": 9,
+            "name": "Chair_4",
+            "translation": [1.009, 0.082, 3.692],
+            "rotation": [0, 90, 19.2]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_1",
+            "translation": [0.515, 0.150, 1.644],
+            "rotation": [0, -90, -90]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_2",
+            "translation": [2.294, 0.150, 3.950],
+            "rotation": [90, 0, -180]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_3",
+            "translation": [0.515, 0.150, 6.032],
+            "rotation": [0, 90, 90]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_4",
+            "translation": [-1.714, -0.150, 3.950],
+            "rotation": [-90, 0, 0]
+        }
+    ]
+}

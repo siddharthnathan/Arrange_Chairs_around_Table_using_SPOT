@@ -1,9 +1,0 @@
-3 Left_Wall_1
-2 Left_Wall_2
-1 Origin
-4 Right_Wall_1
-5 Right_Wall_2
-6 Chair_1
-7 Chair_2
-8 Chair_3
-9 Chair_4

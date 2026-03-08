@@ -2,77 +2,52 @@
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import math
+import json
 import cv2
-
-
-# Define a Function to Read Object mapping from Text file
-def read_mapping_of_objects():
-
-	# Initialise Object Mapping Dictionary
-	global object_mapping
-	object_mapping = {}
-	
-	# Read Text File
-	with open("object_mapping.txt") as file:
-		
-		# For every Line in File
-		lines = file.readlines()
-		for line in lines:
-
-			# Extract Key and Value
-			aruco_id, name = line.split(' ')
-
-			# Form Object Mapping Dictionary
-			object_mapping[int(aruco_id)] = name.replace('\n', '')
-	
-	# Return Object Mapping
-	return object_mapping
 
 
 # Define a Class to store the AruCo ID, Name, Pose of Object
 class Object:
 
 	# Define the Init Function
-	def __init__(self, aruco_id, name, final_pose = None):
+	def __init__(self, aruco_id, name, translation, rotation):
 				
-		# Initialise the AruCo ID, Name, Pose, Final Pose of Object
+		# Initialise the AruCo ID, Name
 		self.aruco_id = aruco_id
 		self.name = name
-		self.final_pose = final_pose
-		self.pose = None
+		
+		# Initialise the Translation and Rotation components of Final pose
+		self.final_pose = {'Translation': translation, 'Rotation': rotation, 'Pose': compute_pose_from_components(translation, rotation)}
 
-		# If Object name is Origin
-		if "Origin" in self.name:
-			self.final_pose = np.identity(4)
+		# Initialise the Translation and Rotation components of Current pose
+		self.pose = {'Translation': None, 'Rotation': None, 'Pose': None}
 		
 		# Set Arranged flag as True
 		self.is_arranged = True
 
-		# Initialise Chair Displacement from Final pose
+		# Initialise Displacement from Final pose
 		self.displacement = None
 
-		# Initialise Translation and Rotation threshold
-		self.min_translation_threshold = 0.1
-		self.max_translation_threshold = 1
-		self.rotation_threshold = 10
-		
+		# Initialise Translation and Rotation threshold to check Displacement
+		self.translation_threshold = 0.1
+		self.rotation_threshold = 5
 
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
 
 		# Get the Displacement matrix of Chair wrt Final pose
-		self.displacement = np.linalg.inv(self.final_pose) @ self.pose
+		self.displacement = np.linalg.inv(self.final_pose['Pose']) @ self.pose['Pose']
 
-		# Extract the Displacement Translation and Rotation of Chair
-		translation, rotation = get_translation_and_rotation_from_pose(self.displacement, angle = True)
+		# Extract the Displacement Translation and Rotation components of Chair
+		translation, rotation = get_components_from_pose(self.displacement)
 		x, _, z = translation
 		_, ry, _ = rotation
 		self.displacement = [x, z, ry]
 
 		# If the Difference exceeds a threshold, Return False
-		if abs(x) > self.min_translation_threshold and abs(x) < self.max_translation_threshold \
-			or abs(z) > self.min_translation_threshold and abs(z) < self.max_translation_threshold \
-			or abs(ry) > self.rotation_threshold:
+		if abs(x) > self.translation_threshold \
+		or abs(z) > self.translation_threshold \
+		or abs(ry) > self.rotation_threshold:
 			return False
 
 		# Else, Return True
@@ -87,18 +62,12 @@ class Object:
 		print("Name: ", self.name)
 		
 		# Display Translation and Rotation if Current pose is not None
-		if self.pose is not None:
-			translation, rotation = get_translation_and_rotation_from_pose(self.pose, angle = True)
-			print("Pose:")
-			print("Translation: ", translation)
-			print("Rotation: ", rotation)
-		
+		if self.pose['Pose'] is not None:
+			print("[ Translation:", self.pose['Translation'], ", Rotation:", self.pose['Rotation'], ']')
+			
 		# Display Translation and Rotation if Final pose is not None
-		if self.final_pose is not None:
-			translation, rotation = get_translation_and_rotation_from_pose(self.final_pose, angle = True)
-			print("Final_Pose:")
-			print("Translation: ", translation)
-			print("Rotation: ", rotation)
+		if self.final_pose['Pose'] is not None:
+			print("[ Translation:", self.final_pose['Translation'], ", Rotation:", self.final_pose['Rotation'], ']')
 		print("\n")
 			
 
@@ -106,156 +75,81 @@ class Object:
 class Objects:
 
 	# Define the Init Function
-	def __init__(self, objects_with_aruco_ids):
+	def __init__(self):
 		
-		# Initialise Objects in Scene
-		self.objects_with_aruco_ids = objects_with_aruco_ids
-		self.cameras = []
-		self.chairs = []
-		self.walls = []
-		self.waypoints = []
+		# Read Objects poses from JSON file
+		with open('saved_objects_poses.json', 'r') as file:
+			self.objects_data = json.load(file)['objects']
 
-		# Define Range scale wrt Distance between Chairs
-		self.scale_of_range = 2.5
+		# Initialise Poses of Cameras
+		self.cameras = self.initialise_poses_of_object(object_name = 'Camera')
 
-		# Define the Number of Waypoints and Angle between Waypoints in Scene
-		self.num_of_waypoints = 6
-		self.angle_bw_waypoints = 2 * np.pi / self.num_of_waypoints
-		
-		# For every Object with ArUco IDs
-		for key, val in objects_with_aruco_ids.items():
+		# Initialise Poses of Wall markers
+		self.walls = self.initialise_poses_of_object(object_name = 'Wall')
 
-			# If Object is Chair
-			if "Chair" in val:
-				self.chairs.append(Object(aruco_id = key, name = val))
+		# Initialise Poses of Chairs
+		self.chairs = self.initialise_poses_of_object(object_name = 'Chair')
+
+		# Initialise Poses of Waypoints
+		self.waypoints = self.initialise_poses_of_object(object_name = 'Waypoint')
+	
+
+	# Define a Function to Initialise Poses of given Object
+	def initialise_poses_of_object(self, object_name):
+
+		# Initialise List to store Poses for given Object
+		objects = []
+
+		# For every Item in the Dictionary
+		for item in self.objects_data:
 			
-			# Else if Object is not Chair (AruCo on Walls)
-			else:
-				self.walls.append(Object(aruco_id = key, name = val))
-					
-	
-	# Define a Function to Compute the Pose of Table using Final pose of Chairs
-	def compute_pose_of_table(self):
+			# If Name of object matches given object_name
+			if object_name in item['name']:
 
-		# Initialise Table Object
-		self.table = Object(aruco_id = None, name = "Table")
-
-		# Initialise Translation and Rotation arrays of Chairs
-		translation_of_chairs = []
-		rotation_of_chairs = []
-
-		# For every Chair object
-		for chair in self.chairs:
-
-			# Store the Translation and Rotation components of Chairs
-			translation, rotation = get_translation_and_rotation_from_pose(chair.final_pose, angle = True)
-			translation_of_chairs.append(translation)
-			if chair.name == "Chair_1" or chair.name == "Chair_2":
-				rotation_of_chairs.append(rotation[1])
-
-		# Compute the Translation and Rotation component of Table by taking Mean
-		translation_of_table = np.mean(translation_of_chairs, axis = 0)
-		rotation_of_table = [0, -90 - np.mean(rotation_of_chairs), 0]
-
-		# Compute the Pose of Table
-		self.table.final_pose = compute_pose_from_vectors_or_angles(translation_of_table, rotation_of_table, angle = True)
-
-		# Return the Updated object with Table data
-		return self
-	
-	
-	# Define a Function to Compute the Pose of Waypoints using Pose of Table
-	def compute_poses_of_waypoints(self):
-
-		# Retrieve the Poses of Chairs in scene
-		pose_of_chair_1, pose_of_chair_2 = self.get_pose_of_chair("Chair_1"), self.get_pose_of_chair("Chair_2")
-		pose_of_chair_3, pose_of_chair_4 = self.get_pose_of_chair("Chair_3"), self.get_pose_of_chair("Chair_4")
-
-		# Compute the Average Distance between Chairs
-		distance_bw_chairs = round(np.mean([compute_distance_between_poses(pose_of_chair_1, pose_of_chair_2), compute_distance_between_poses(pose_of_chair_3, pose_of_chair_4)]), 3)
-
-		# Create Object for Waypoint 1 (South of Table)
-		waypoint_1 = Object(aruco_id = None, name = "Waypoint_1")
-
-		# Determine Pose of Waypoint 1 using Pose of Table and Scale Range around Table wrt SPOT body frame
-		waypoint_1.final_pose = self.table.final_pose @ compute_pose_from_vectors_or_angles(translation = [0, 0, self.scale_of_range * distance_bw_chairs],
-														   		 				   			rotation = [0, 90, 90], angle = True)
-		self.waypoints.append(waypoint_1)
-
-		# For every remaining Waypoints
-		for i in range(self.num_of_waypoints - 1):
-
-			# Create Object for Waypoint
-			waypoint = Object(aruco_id = None, name = "Waypoint_" + str(i+2))
-
-			# Determine the Pose of Waypoint using Pose of Table, Scale Range around Table and Angle inscribed around Table
-			waypoint.final_pose = self.compute_pose_of_waypoint(waypoint_1, angle = self.angle_bw_waypoints * (i+1))
-
-			# Append Waypoint data
-			self.waypoints.append(waypoint)
-
-		# Return the Updated object with Waypoints data
-		return self
-
-
-	# Define a Function to Determine the Pose of Waypoint using Pose of Table, Scale Range around Table and Angle inscribed around Table wrt SPOT body frame
-	def compute_pose_of_waypoint(self, waypoint, angle):
-
-		# Get the Pose of Table and Waypoint
-		pose_of_table, pose_of_waypoint = self.table.final_pose, waypoint.final_pose
-		
-		# Compute the Relative pose of Waypoint wrt Table
-		relative_pose_of_waypoint = np.linalg.inv(pose_of_table) @ pose_of_waypoint
-		distance_of_relative_pose = compute_distance_from_pose(relative_pose_of_waypoint)
-		
-		# Compute the Pose of Waypoint and Return
-		s, c = math.sin(angle), math.cos(angle)
-		return round_matrix_list(pose_of_table @ compute_pose_from_vectors_or_angles(translation = [-s * distance_of_relative_pose, 0, c * distance_of_relative_pose],
-														 	   				   		 rotation = [0, 90-angle, 90], angle = True) @ np.array([
-																																				[ c,  s,  0,  0],
-																																				[-s,  c,  0,  0],
-																																				[ 0,  0,  1,  0],
-																																				[ 0,  0,  0,  1]
-																					 														]), 3)
-	# Define a Function to get the Pose of Camera using Name
-	def get_pose_of_camera(self, name):
-
-		# For every Camera Object
-		for object in self.cameras:
-
-			# If Object Name matches given Name
-			if object.name == name:
+				# Create object
+				object = Object(	
+									aruco_id = item['id'],
+									name = item['name'],
+									translation = item['translation'],
+									rotation = item['rotation']
+							   )
 				
-				# Return Final Pose
-				return object.final_pose
+				# Append Object into List
+				objects.append(object)
+		
+		# Return Objects
+		return objects
+	
+
+	# Define a Function to get the Name of the object from ArUco ID
+	def get_name_of_object(self, aruco_id):
+
+		# For every Item in the Dictionary
+		for item in self.objects_data:
 			
+			# If ID of object matches given aruco_id
+			if aruco_id == item['id']:
 
-	# Define a Function to get the Pose of Wall using Name
-	def get_pose_of_wall(self, name):
-
-		# For every Wall Object
-		for object in self.walls:
-
-			# If Object Name matches given Name
-			if object.name == name:
-				
-				# Return Final Pose
-				return object.final_pose
-	
-
-	# Define a Function to get the Pose of Chair using Name
-	def get_pose_of_chair(self, name):
-
-		# For every Chair Object
-		for object in self.chairs:
-
-			# If Object Name matches given Name
-			if object.name == name:
-				
-				# Return Final Pose
-				return object.final_pose
+				# Return the Name of Object
+				return item['name']
 	
 	
+	# Define a Function to get Pose of given Object
+	def get_pose_of_object(self, object_name):
+
+		# For every Item in the Dictionary
+		for item in self.objects_data:
+			
+			# If Name of object matches given object_name
+			if object_name in item['name']:
+
+				# Return Pose of Object
+				return compute_pose_from_components(
+														translation = item["translation"],
+														rotation = item["rotation"]
+													)
+
+
 	# Define a Function to get Chairs that are Unarranged around Table
 	def get_unarranged_chairs(self):
 
@@ -303,10 +197,6 @@ class Objects:
 		print("----- ArUco on Chairs -----\n")
 		for object in self.chairs:
 			object.display()
-		
-		# Display Data for Table
-		print("----- Pose of Table -----\n")
-		self.table.display()
 
 		# Display Data for Waypoints
 		print("----- Pose of Waypoints -----\n")
@@ -335,13 +225,7 @@ def round_matrix_list(matrix_list, num_decimal_places):
 
 
 # Define a Function to get the Pose of AruCo tag from List of detected AruCo tags wrt any Coordinate frame
-def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
-
-	# Get the Mapping of Objects with AruCo IDs
-	object_mapping = read_mapping_of_objects()
-
-	# Get the AruCo ID corresponding to the Object name
-	aruco_id = list(object_mapping.keys())[list(object_mapping.values()).index(object_name)]
+def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_id):
 
 	# If there are AruCo tags detected in the Frame
 	if aruco_tags_data_wrt_frame is not None:
@@ -349,8 +233,8 @@ def get_pose_of_aruco_tag(aruco_tags_data_wrt_frame, object_name):
 		# For every AruCo tag detected in frame
 		for aruco_tag_data_wrt_frame in aruco_tags_data_wrt_frame:
 
-			# If AruCo ID matches given ID
-			if aruco_id == aruco_tag_data_wrt_frame['ID']:
+			# If AruCo ID matches given Ibject ID
+			if object_id == aruco_tag_data_wrt_frame['ID']:
 
 				# Return the Pose of that AruCo marker
 				return aruco_tag_data_wrt_frame['Pose']
@@ -378,8 +262,8 @@ def compute_pose_from_spot_data(spot_data):
 	return round_matrix_list(transformation_matrix, 3)
 
 
-# Define a Function to Calculate Pose from Translation and Rotation vector/angles
-def compute_pose_from_vectors_or_angles(translation, rotation, angle):
+# Define a Function to Calculate Pose from Translation and Rotation components
+def compute_pose_from_components(translation, rotation, degrees = True):
 
 	# Initialise Transformation matrix
 	transformation_matrix = np.zeros((4, 4))
@@ -387,8 +271,8 @@ def compute_pose_from_vectors_or_angles(translation, rotation, angle):
 	# Frame Transformation matrix
 	transformation_matrix[:3, 3] = np.array(translation).T
 
-	# If Rotation is in Angles
-	if angle:
+	# If Rotation is in Degrees
+	if degrees:
 		transformation_matrix[:3, :3] = R.from_euler('xyz', rotation, degrees = True).as_matrix()
 	
 	# If Rotation is in Vectors
@@ -401,7 +285,7 @@ def compute_pose_from_vectors_or_angles(translation, rotation, angle):
 
 
 # Define a Function to Get Translation and Rotation Quartenion/Angles from Pose
-def get_translation_and_rotation_from_pose(pose, angle):
+def get_components_from_pose(pose, degrees = True):
 
 	# Round off Pose matrix and get Translation vector
 	pose = round_matrix_list(pose, 3)
@@ -411,9 +295,17 @@ def get_translation_and_rotation_from_pose(pose, angle):
 	rotation_matrix = pose[:3, :3]
 	rotation = R.from_matrix(rotation_matrix)
 
-	# If Rotation is in Angle
-	if angle:
-		rotation = rotation.as_euler('xyz', degrees = True)
+	# If Rotation is in Degrees
+	if degrees:
+		
+		# In ZYX Rotation order, calculate Euler angles
+		rx = 0
+		ry = round(math.degrees(math.asin(-rotation_matrix[2][0])))
+		if rotation_matrix[0][1] > 0:
+			rz = -19.2
+		else:
+			rz = 19.2
+		rotation = [rx, ry , rz]
 	
 	# If Rotation is in Quartenion
 	else:

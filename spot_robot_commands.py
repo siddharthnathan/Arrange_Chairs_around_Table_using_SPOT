@@ -206,7 +206,7 @@ def move_robot_to_location(robot, pose):
     lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
 
     # Get the Translation and Rotation from Pose
-    translation, rotation = utils.get_translation_and_rotation_from_pose(pose, angle = True)
+    translation, rotation = utils.get_components_from_pose(pose)
     
     # Until Lease is kept alive
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
@@ -240,7 +240,7 @@ def move_arm_to_grasp_pose(robot, pose):
     with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
        
         # Get Translation and Rotation quartenion from Pose
-        translation, quartenion = utils.get_translation_and_rotation_from_pose(pose, angle = False)
+        translation, quartenion = utils.get_components_from_pose(pose, degrees = False)
 
         # Build a position to move the arm to (in meters, relative to and expressed in the gravity aligned body frame).
         x, y, z = translation
