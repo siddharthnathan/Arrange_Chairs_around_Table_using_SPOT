@@ -32,6 +32,7 @@ class Object:
 		self.translation_threshold = 0.1
 		self.rotation_threshold = 5
 
+
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
 
@@ -39,7 +40,7 @@ class Object:
 		self.displacement = np.linalg.inv(self.final_pose['Pose']) @ self.pose['Pose']
 
 		# Extract the Displacement Translation and Rotation components of Chair
-		translation, rotation = get_components_from_pose(self.displacement)
+		translation, rotation = get_components_from_pose_for_chair(self.displacement)
 		x, _, z = translation
 		_, ry, _ = rotation
 		self.displacement = [x, z, ry]
@@ -63,10 +64,12 @@ class Object:
 		
 		# Display Translation and Rotation if Current pose is not None
 		if self.pose['Pose'] is not None:
+			print("Pose:")
 			print("[ Translation:", self.pose['Translation'], ", Rotation:", self.pose['Rotation'], ']')
 			
 		# Display Translation and Rotation if Final pose is not None
 		if self.final_pose['Pose'] is not None:
+			print("Final_Pose:")
 			print("[ Translation:", self.final_pose['Translation'], ", Rotation:", self.final_pose['Rotation'], ']')
 		print("\n")
 			
@@ -284,8 +287,8 @@ def compute_pose_from_components(translation, rotation, degrees = True):
 	return round_matrix_list(transformation_matrix, 3)
 
 
-# Define a Function to Get Translation and Rotation Quartenion/Angles from Pose
-def get_components_from_pose(pose, degrees = True):
+# Define a Function to Get Translation and Rotation Angles from Pose for Chair only
+def get_components_from_pose_for_chair(pose, degrees = True):
 
 	# Round off Pose matrix and get Translation vector
 	pose = round_matrix_list(pose, 3)
@@ -317,6 +320,35 @@ def get_components_from_pose(pose, degrees = True):
 	return translation, rotation
 
 
+# Define a Function to Get Translation and Rotation Quartenion/Angles from Pose
+def get_components_from_pose(pose, degrees = True):
+
+	# Round off Pose matrix and get Translation vector
+	pose = round_matrix_list(pose, 3)
+	translation = pose[:3, 3]
+
+	# Get Rotation matrix
+	rotation_matrix = pose[:3, :3]
+	rotation = R.from_matrix(rotation_matrix)
+
+	# If Rotation is in Degrees
+	if degrees:
+		
+		# Get Euler angles in a specific sequence (e.g., 'zyx')
+		# 'zyx' is a common convention, representing rotations around Z, then Y, then X.
+		# You can specify the order as per your application's requirements (e.g., 'xyz', 'YXZ', etc.)
+		rotation = R.from_matrix(rotation_matrix).as_euler('xyz', degrees = True)
+			
+	# If Rotation is in Quartenion
+	else:
+		rotation = rotation.as_quat()
+
+	# Approximate and Return Translation and Rotation
+	translation = round_float_list(translation, 3)
+	rotation = round_float_list(rotation, 3)
+	return translation, rotation
+
+
 # Define a Function to Compute the Absolute Distance from Relative Pose
 def compute_distance_from_pose(pose):
 
@@ -336,3 +368,40 @@ def compute_distance_between_poses(pose, reference_pose):
 
 	# Return the Distance of Pose
 	return compute_distance_from_pose(relative_pose)
+
+
+# Define a Function to get Optimal path from Waypoint to another Waypoint
+def get_waypoints_path(from_waypoint, to_waypoint):
+
+    # Initialise Array of Waypoint Names
+    waypoint_names = []
+    for i in range(8):
+        waypoint_names.append("Waypoint_" + str(i+1))
+    
+    # If From Waypoint is before To Waypoint
+    if from_waypoint.name < to_waypoint.name:
+
+        # Initialise Clockwise path
+        clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name) + 1]
+
+        # Initialise Anti Clockwise path
+        anti_clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : -1]
+        anti_clockwise_path_2 = waypoint_names[7: waypoint_names.index(to_waypoint.name) - 1: -1]
+        anti_clockwise_path = anti_clockwise_path_1 + anti_clockwise_path_2
+
+    # If From Waypoint is after To Waypoint
+    else:
+
+        # Initialise Anti Clockwise path
+        anti_clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name): -1]
+
+        # Initialise Clockwise path
+        clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : ]
+        clockwise_path_2 = waypoint_names[ : waypoint_names.index(to_waypoint.name) + 1: ]
+        clockwise_path = clockwise_path_1 + clockwise_path_2
+
+    # Return Optimal Path
+    if len(clockwise_path) < len(anti_clockwise_path):
+        return clockwise_path
+    else:
+        return anti_clockwise_path

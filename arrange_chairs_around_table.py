@@ -3,7 +3,6 @@ import spot_robot_commands
 import read_video_stream
 import pose_estimation
 import utils
-import math
 
 # Import Necessary Libraries
 import numpy as np
@@ -62,74 +61,51 @@ def arrange_chair_around_table(robot, objects, pose_of_spot_body_frame, chair_to
 
     # Move Robot behind Chair
     spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
-    
-    # Get the Pose of AruCo tags wrt SPOT Body Frame
-    aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
-    pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, chair_to_arrange.aruco_id)
-
-    # Grasp Chair using Robot
-    spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
-    
-    # Transform Final pose of Chair wrt SPOT Frame
-    trans_final_pose = chair_to_arrange.final_pose['Pose'] @ np.array([
-                                                                        [ 0,     -1,    0,      0],
-                                                                        [ 0.402,  0,    0.915,  0],
-                                                                        [-0.915,  0,    0.402,  0],
-                                                                        [ 0,      0,    0,      1]
-                                                                      ])
-    
-    # Get the Pose of SPOT Body Frame and Pose of Chair wrt SPOT
+        
+    # Get the Pose of SPOT Body Frame and Pose of Chair wrt SPOT frame
     aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
     pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
     pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, chair_to_arrange.aruco_id)
 
-    # Compute and Transform Current pose of Chair wrt SPOT Frame
-    trans_current_pose = pose_of_spot_body_frame @ pose_of_chair_wrt_spot @ np.array([
-                                                                                        [ 0,     -1,    0,      0],
-                                                                                        [ 0.402,  0,    0.915,  0],
-                                                                                        [-0.915,  0,    0.402,  0],
-                                                                                        [ 0,      0,    0,      1]
-                                                                                    ])
+    # Compute the Pose of Chair wrt Origin
+    current_chair_pose = utils.round_matrix_list(pose_of_spot_body_frame @ pose_of_chair_wrt_spot, 3)
+    chair_to_arrange.pose['Pose'] = current_chair_pose
+    chair_to_arrange.pose['Translation'], chair_to_arrange.pose['Rotation'] = utils.get_components_from_pose_for_chair(current_chair_pose)
+    
+    # Grasp Chair using Robot
+    spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
+    time.sleep(3)
+
+    # Convert the Current and Final pose of Chair wrt SPOT frame
+    current_chair_pose_wrt_spot = chair_to_arrange.pose['Pose'] @ np.array([
+                                                                                [ 0,     -1,    0,      0],
+                                                                                [ 0.329,  0,    0.944,  0],
+                                                                                [-0.944,  0,    0.329,  0],
+                                                                                [ 0,      0,    0,      1]
+                                                                           ])
+    final_chair_pose_wrt_spot = chair_to_arrange.final_pose['Pose'] @ np.array([
+                                                                                    [ 0,     -1,    0,      0],
+                                                                                    [ 0.329,  0,    0.944,  0],
+                                                                                    [-0.944,  0,    0.329,  0],
+                                                                                    [ 0,      0,    0,      1]
+                                                                               ])
     
     # Compute Pose to move SPOT to Arrange Chair
-    pose_to_move_chair = utils.round_matrix_list(np.linalg.inv(trans_current_pose) @ trans_final_pose, num_decimal_places = 3)
+    pose_to_move_chair = utils.round_matrix_list(np.linalg.inv(current_chair_pose_wrt_spot) @ final_chair_pose_wrt_spot, num_decimal_places = 3)
     translation, rotation = utils.get_components_from_pose(pose_to_move_chair)
     x, y, _ = translation
     _, _, rz = rotation
 
     # Move SPOT to Arrange Chair
     print("Moving SPOT by ", [x, y, rz])
-    '''
     spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
     
     # Let go of the Chair after Arranging
     let_go_of_chair(robot)
 
     # Go to the Nearest Waypoint from the Unarranged Chair
-    goto_nearest_waypoint(robot, objects, chair_to_arrange)
-    '''
-
-# Define a Function to goto the Nearest Waypoint from the Unarranged Chair
-def goto_nearest_waypoint(robot, objects, chair_to_arrange):
-
-    # If Unarranged chairs are 1 & 2, set Waypoint 4 as Nearest Waypoint
-    if chair_to_arrange.name == "Chair_1" or chair_to_arrange.name == "Chair_2":
-        nearest_waypoint = objects.waypoints[3]
+    spot_robot_commands.move_SPOT_to_nearest_waypoint(robot, objects)
     
-    # Elif Unarranged chairs are 3 & 4, set Waypoint 2 as Nearest Waypoint
-    elif chair_to_arrange.name == "Chair_3" or chair_to_arrange.name == "Chair_4":
-        nearest_waypoint = objects.waypoints[1]
-    
-    # Get the Pose of AruCo tags wrt SPOT Body Frame
-    aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()        
-    
-    # Get the Pose of SPOT body frmae wrt Origin
-    pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
-
-    # Compute Pose to move and Move Robot
-    pose_to_move_to_waypoint = np.linalg.inv(pose_of_spot_body_frame) @ nearest_waypoint.final_pose['Pose']
-    spot_robot_commands.move_robot_to_location(robot, pose_to_move_to_waypoint)
-
 
 # Define a Function to Arrange Chairs around a Table
 def arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_body_frame):
@@ -141,8 +117,20 @@ def arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_
     #chair_to_arrange = get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame)
     chair_to_arrange = objects.chairs[1]
 
-    # Go to the Nearest Waypoint from the Unarranged Chair
-    goto_nearest_waypoint(robot, objects, chair_to_arrange)
+    # Go to the Nearest Waypoint from the Pose of 
+    nearest_waypoint = spot_robot_commands.move_SPOT_to_nearest_waypoint(robot, objects)
+    
+    # Find the Nearest Waypoint from the Unarranged Chair
+    if chair_to_arrange.name == 'Chair_1' or chair_to_arrange.name == 'Chair_2':
+        destination_waypoint = objects.waypoints[6]
+    elif chair_to_arrange.name == 'Chair_3' or chair_to_arrange.name == 'Chair_4':
+        destination_waypoint = objects.waypoints[2]
+
+    # Get the Path for the SPOT Robot across Waypoints
+    waypoints_path = utils.get_waypoints_path(nearest_waypoint, destination_waypoint)
+
+    # Move Robot across Waypoints
+    spot_robot_commands.move_SPOT_across_waypoints(robot, objects, waypoints_path)
 
     # Arrange the Chair that has to be Arranged
     print("Arranging ", chair_to_arrange.name)
@@ -207,8 +195,7 @@ def main():
 
             break
             # Wait 3 seconds
-            time.sleep(3)
-            
+            time.sleep(3)        
 
     # Stop streaming finally
     finally:

@@ -15,43 +15,6 @@ grasp_pose_location_wrt_aruco_on_chair = np.array([
                                                  ])
 
 
-# Define a Function to Account for the Offset in Grasp pose wrt SPOT
-def account_for_offset(grasp_pose_wrt_spot, offset):
-
-    # Get the Translation and Rotation of Grasp pose wrt SPOT
-    translation, rotation = utils.get_components_from_pose(grasp_pose_wrt_spot)
-    
-    # If Offset is due to Camera
-    if offset == 'SPOT':
-
-        # Update Translation according to the Offsets in m
-        translation[0] -= 0.08
-        translation[1] -= 0.10
-        translation[2] += 0.01
-
-        # Update Rotation accordingly
-        rotation[0] = 0
-        rotation[1] = 90
-        rotation[2] = 0
-    
-    # If Offset is due to SPOT
-    elif offset == 'Camera':
-
-        # Update Translation according to the Offsets in m
-        translation[0] += 0
-        translation[1] += 0
-        translation[2] += 0
-
-        # Update Rotation accordingly
-        rotation[0] = 0
-        rotation[1] = 90
-        rotation[2] = 0
-
-    # Update Pose accordingly and Return
-    grasp_pose_wrt_spot = utils.compute_pose_from_components(translation, rotation)
-    return grasp_pose_wrt_spot
-
-
 # Define a Function to Get Pose of AruCo tag in Image frame
 def estimate_poses_of_aruco_tags(frame, aruco_dict_type, camera_calibration_params):
 
@@ -175,7 +138,7 @@ def update_poses_of_chairs(images, objects, aruco_tags_data_wrt_spot_frame,
             objects.chairs[i].pose['Pose'] = utils.round_matrix_list(pose_of_spot_body_frame @ pose_of_chair_wrt_spot_frame, 3)
 
         # Update pose components of Chairs
-        objects.chairs[i].pose['Translation'], objects.chairs[i].pose['Rotation'] = utils.get_components_from_pose(objects.chairs[i].pose['Pose'])
+        objects.chairs[i].pose['Translation'], objects.chairs[i].pose['Rotation'] = utils.get_components_from_pose_for_chair(objects.chairs[i].pose['Pose'])
         
     # Return the Objects with updated Poses
     return objects
@@ -198,4 +161,8 @@ def compute_grasp_pose(pose_of_chair_wrt_spot):
     # Compute and Return the Grasp Pose of Chair wrt SPOT
     grasp_pose_wrt_spot = utils.round_matrix_list(pose_of_chair_wrt_spot @ grasp_pose_location_wrt_aruco_on_chair, 3)
     return grasp_pose_wrt_spot
-    
+
+
+# Define a Function to Get the Pose of ArUco on Chair wrt SPOT using Grasp pose
+def get_pose_of_chair_wrt_SPOT(robot):
+    return utils.round_matrix_list(spot_robot_commands.get_pose_of_arm(robot) @ np.linalg.inv(grasp_pose_location_wrt_aruco_on_chair), 3)

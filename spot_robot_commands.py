@@ -91,7 +91,7 @@ class DetectFiducial(object):
         self._robot.time_sync.wait_for_sync()
 
         # Get the fiducial objects Spot detects with the world object service
-        for _ in range(3):
+        for _ in range(4):
             fiducials = self.get_fiducial_objects()
             time.sleep(1)
         aruco_tags_wrt_spot_body_frame = []
@@ -225,6 +225,36 @@ def move_robot_to_location(robot, pose):
     time.sleep(2)
 
 
+# Define a Function to Get pose of SPOT arm with respect to Body frame
+def get_pose_of_arm(robot):
+
+    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
+    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
+
+    # Create required Robot clients
+    robot_state_client = robot.ensure_client(RobotStateClient.default_service_name)
+    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
+
+    # Until Lease exists
+    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
+       
+        # Get the latest robot state
+        robot_state = robot_state_client.get_robot_state()
+
+        # Get the frame tree snapshot
+        frame_tree_snapshot = robot_state.kinematic_state.transforms_snapshot
+
+        # Get the transformation from body to hand
+        # "body" is the body frame, "hand" is the gripper frame
+        # body_tform_hand means: The position/orientation of the hand in the body frame
+        try:
+            body_tform_hand = bosdyn.client.frame_helpers.get_a_tform_b(
+                frame_tree_snapshot, 'body', 'hand')
+            return utils.compute_pose_from_spot_data(body_tform_hand)
+        except Exception as e:
+            print("Could not get transform:", e)
+
+
 # Define a Function to Move SPOT arm to Grasp Pose
 def move_arm_to_grasp_pose(robot, pose):
 
@@ -355,3 +385,59 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
     # Move SPOT to the given Pose
     move_robot_to_location(robot, pose_to_move)
     time.sleep(2)
+
+
+# Define a Function to Move SPOT Robot to Closest Waypoint
+def move_SPOT_to_nearest_waypoint(robot, objects):
+
+    # Get the Pose of AruCo tags wrt SPOT Body Frame
+    aruco_tags_data_wrt_spot_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()        
+    
+    # Get the Pose of SPOT body frmae wrt Origin
+    pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
+
+    # For every Waypoint
+    min_distance = 100
+    for waypoint in objects.waypoints:
+
+        # If SPOT is lesser than min_distance from Waypoint
+        distance = utils.compute_distance_between_poses(waypoint.final_pose['Pose'], pose_of_spot_body_frame)
+        if distance < min_distance:
+
+            # Update Min distance and Nearest Waypoint
+            min_distance = distance
+            nearest_waypoint = waypoint
+    
+    # Move Robot to Nearest Waypoint
+    move_robot_to_waypoint(robot, objects, nearest_waypoint.final_pose['Pose'])
+    
+    # Return the Nearest Waypoint
+    return nearest_waypoint
+
+
+# Define a Function to Move SPOT Robot to Waypoint
+def move_robot_to_waypoint(robot, objects, pose_of_waypoint):
+
+    # Get the Pose of AruCo tags wrt SPOT Body Frame
+    aruco_tags_data_wrt_spot_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()        
+    
+    # Get the Pose of SPOT body frmae wrt Origin
+    pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
+
+    # Compute Pose to move and Move Robot
+    pose_to_move_to_waypoint = np.linalg.inv(pose_of_spot_body_frame) @ pose_of_waypoint
+    move_robot_to_location(robot, pose_to_move_to_waypoint)
+
+
+# Define a Function to move SPOT Robot across Waypoints
+def move_SPOT_across_waypoints(robot, objects, waypoints_path):
+
+    # For every Waypoint in its Path
+    for waypoint in waypoints_path:
+
+        # Get Pose of Waypoint
+        pose_of_waypoint = objects.get_pose_of_object(waypoint.name)
+
+        # Move to Waypoint
+        move_robot_to_waypoint(robot, objects, pose_of_waypoint)
+        time.sleep(1)

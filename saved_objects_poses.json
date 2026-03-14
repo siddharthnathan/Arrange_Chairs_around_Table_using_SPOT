@@ -88,22 +88,50 @@
         {
             "id": "None",
             "name": "Waypoint_2",
+            "translation": [1.700, 0.150, 2.500],
+            "rotation": [90, -45, -180]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_3",
             "translation": [2.294, 0.150, 3.950],
             "rotation": [90, 0, -180]
         },
 
         {
             "id": "None",
-            "name": "Waypoint_3",
+            "name": "Waypoint_4",
+            "translation": [1.500, 0.150, 5.100],
+            "rotation": [90, 45, -180]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_5",
             "translation": [0.515, 0.150, 6.032],
             "rotation": [0, 90, 90]
         },
 
         {
             "id": "None",
-            "name": "Waypoint_4",
-            "translation": [-1.714, -0.150, 3.950],
+            "name": "Waypoint_6",
+            "translation": [-0.700, 0.150, 5.100],
+            "rotation": [-90, 45, 0]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_7",
+            "translation": [-1.714, 0.150, 3.950],
             "rotation": [-90, 0, 0]
+        },
+
+        {
+            "id": "None",
+            "name": "Waypoint_8",
+            "translation": [-0.700, 0.150, 2.600],
+            "rotation": [-90, -45, 0]
         }
     ]
 }
