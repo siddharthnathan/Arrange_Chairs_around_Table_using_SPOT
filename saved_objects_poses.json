@@ -54,28 +54,48 @@
             "id": 6,
             "name": "Chair_1",
             "translation": [-0.127, 0.082, 3.492],
-            "rotation": [0, -90, -19.2]
+            "rotation": [0, -90, -19.2],
+            "camera_frame":
+            {
+                "translation": "None",
+                "rotation": "None"
+            }
         },
 
         {
             "id": 7,
             "name": "Chair_2",
             "translation": [-0.127, 0.082, 4.114],
-            "rotation": [0, -90, -19.2]
+            "rotation": [0, -90, -19.2],
+            "camera_frame":
+            {
+                "translation": "None",
+                "rotation": "None"
+            }
         },
 
         {
             "id": 8,
             "name": "Chair_3",
             "translation": [1.009, 0.082, 4.314],
-            "rotation": [0, 90, 19.2]
+            "rotation": [0, 90, 19.2],
+            "camera_frame":
+            {
+                "translation": "None",
+                "rotation": "None"
+            }
         },
 
         {
             "id": 9,
             "name": "Chair_4",
             "translation": [1.009, 0.082, 3.692],
-            "rotation": [0, 90, 19.2]
+            "rotation": [0, 90, 19.2],
+            "camera_frame":
+            {
+                "translation": "None",
+                "rotation": "None"
+            }
         },
 
         {
@@ -123,7 +143,7 @@
         {
             "id": "None",
             "name": "Waypoint_7",
-            "translation": [-1.714, 0.150, 3.950],
+            "translation": [-1.500, 0.150, 3.800],
             "rotation": [-90, 0, 0]
         },
 

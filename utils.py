@@ -383,7 +383,7 @@ def get_waypoints_path(from_waypoint, to_waypoint):
 
         # Initialise Clockwise path
         clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name) + 1]
-
+		
         # Initialise Anti Clockwise path
         anti_clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : -1]
         anti_clockwise_path_2 = waypoint_names[7: waypoint_names.index(to_waypoint.name) - 1: -1]
@@ -393,13 +393,13 @@ def get_waypoints_path(from_waypoint, to_waypoint):
     else:
 
         # Initialise Anti Clockwise path
-        anti_clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name): -1]
-
+        anti_clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name) - 1: -1]		
+		
         # Initialise Clockwise path
         clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : ]
         clockwise_path_2 = waypoint_names[ : waypoint_names.index(to_waypoint.name) + 1: ]
-        clockwise_path = clockwise_path_1 + clockwise_path_2
-
+        clockwise_path = clockwise_path_1 + clockwise_path_2	
+		
     # Return Optimal Path
     if len(clockwise_path) < len(anti_clockwise_path):
         return clockwise_path

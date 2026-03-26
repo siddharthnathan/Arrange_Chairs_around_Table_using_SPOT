@@ -36,22 +36,6 @@ def get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame):
     return chair_to_arrange
 
 
-# Define a Function to Let go of Chair after Arranging around Table
-def let_go_of_chair(robot):
-
-    # Unfreeze Arm Joints
-    spot_robot_commands.unfreeze_arm_joints(robot)
-
-    # Open Arm Gripper
-    spot_robot_commands.open_or_close_gripper(robot, action = 'open')
-
-    # Bring Arm back to Default Pose
-    spot_robot_commands.move_arm_to_default_pose(robot)
-
-    # Close Arm Gripper
-    spot_robot_commands.open_or_close_gripper(robot, action = 'close')
-
-
 # Define a Function to Arrange Chair around Table
 def arrange_chair_around_table(robot, objects, pose_of_spot_body_frame, chair_to_arrange):
 
@@ -60,6 +44,7 @@ def arrange_chair_around_table(robot, objects, pose_of_spot_body_frame, chair_to
     pose_of_chair_wrt_spot = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_spot_frame, chair_to_arrange.aruco_id)
 
     # Move Robot behind Chair
+    print("Moving SPOT Behind Chair")
     spot_robot_commands.move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot)
         
     # Get the Pose of SPOT Body Frame and Pose of Chair wrt SPOT frame
@@ -73,6 +58,7 @@ def arrange_chair_around_table(robot, objects, pose_of_spot_body_frame, chair_to
     chair_to_arrange.pose['Translation'], chair_to_arrange.pose['Rotation'] = utils.get_components_from_pose_for_chair(current_chair_pose)
     
     # Grasp Chair using Robot
+    print("Grasping Chair")
     spot_robot_commands.grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot)
     time.sleep(3)
 
@@ -96,14 +82,19 @@ def arrange_chair_around_table(robot, objects, pose_of_spot_body_frame, chair_to
     x, y, _ = translation
     _, _, rz = rotation
 
+    # Compute Final Pose of Chair wrt SPOT
+    pose_to_move_chair = utils.compute_pose_from_components(translation = [0, y, x], rotation = [-rz, 0, 0])
+    final_grasp_pose_of_chair_wrt_spot = utils.round_matrix_list(spot_robot_commands.get_pose_of_arm(robot) @ pose_to_move_chair, 3)
+
     # Move SPOT to Arrange Chair
-    print("Moving SPOT by ", [x, y, rz])
-    spot_robot_commands.move_robot_to_location(robot, pose_to_move_chair)
+    print("Moving SPOT arm by ", [x, y, rz])
+    spot_robot_commands.move_arm_to_grasp_pose(robot, final_grasp_pose_of_chair_wrt_spot)
     
     # Let go of the Chair after Arranging
-    let_go_of_chair(robot)
+    spot_robot_commands.let_go_of_chair(robot)
 
     # Go to the Nearest Waypoint from the Unarranged Chair
+    print("Moving to Nearest Waypoint")
     spot_robot_commands.move_SPOT_to_nearest_waypoint(robot, objects)
     
 
@@ -117,9 +108,10 @@ def arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_
     #chair_to_arrange = get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame)
     chair_to_arrange = objects.chairs[1]
 
-    # Go to the Nearest Waypoint from the Pose of 
+    # Go to the Nearest Waypoint from the Pose of Chair
+    print("Moving to Nearest Waypoint")
     nearest_waypoint = spot_robot_commands.move_SPOT_to_nearest_waypoint(robot, objects)
-    
+
     # Find the Nearest Waypoint from the Unarranged Chair
     if chair_to_arrange.name == 'Chair_1' or chair_to_arrange.name == 'Chair_2':
         destination_waypoint = objects.waypoints[6]
@@ -130,6 +122,7 @@ def arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_
     waypoints_path = utils.get_waypoints_path(nearest_waypoint, destination_waypoint)
 
     # Move Robot across Waypoints
+    print("Moving SPOT across Waypoints")
     spot_robot_commands.move_SPOT_across_waypoints(robot, objects, waypoints_path)
 
     # Arrange the Chair that has to be Arranged
@@ -157,7 +150,7 @@ def main():
 
     # Initialise Objects poses
     objects = utils.Objects()
-    
+    '''
     # Try block
     try:
 
@@ -201,7 +194,7 @@ def main():
     finally:
         camera_1_pipeline.stop()
         camera_2_pipeline.stop()
-    
+    '''
 
 # Invoke the Main Function
 if __name__ == "__main__":

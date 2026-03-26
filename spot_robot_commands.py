@@ -283,7 +283,7 @@ def move_arm_to_grasp_pose(robot, pose):
         # Frame the Pose
         flat_body_T_hand = geometry_pb2.SE3Pose(position = hand_ewrt_flat_body, rotation = flat_body_Q_hand)
 
-        # Get Transformation from ODOM frame to Gravity aligneed Body frame
+        # Get Transformation from ODOM frame to Gravity aligned Body frame
         robot_state = robot_state_client.get_robot_state()
         odom_T_flat_body = get_a_tform_b(robot_state.kinematic_state.transforms_snapshot, ODOM_FRAME_NAME, GRAV_ALIGNED_BODY_FRAME_NAME)
         odom_T_hand = odom_T_flat_body * math_helpers.SE3Pose.from_proto(flat_body_T_hand)
@@ -358,9 +358,6 @@ def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
     # Close the Gripper
     open_or_close_gripper(robot, action = 'close')
 
-    # Freeze Arm Joints
-    freeze_arm_joints(robot)
-
 
 # Define a Function to Move SPOT Robot behind Chair
 def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
@@ -385,6 +382,22 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
     # Move SPOT to the given Pose
     move_robot_to_location(robot, pose_to_move)
     time.sleep(2)
+
+
+# Define a Function to Let go of Chair after Arranging around Table
+def let_go_of_chair(robot):
+
+    # Unfreeze Arm Joints
+    unfreeze_arm_joints(robot)
+
+    # Open Arm Gripper
+    open_or_close_gripper(robot, action = 'open')
+
+    # Bring Arm back to Default Pose
+    move_arm_to_default_pose(robot)
+
+    # Close Arm Gripper
+    open_or_close_gripper(robot, action = 'close')
 
 
 # Define a Function to Move SPOT Robot to Closest Waypoint
@@ -436,7 +449,7 @@ def move_SPOT_across_waypoints(robot, objects, waypoints_path):
     for waypoint in waypoints_path:
 
         # Get Pose of Waypoint
-        pose_of_waypoint = objects.get_pose_of_object(waypoint.name)
+        pose_of_waypoint = objects.get_pose_of_object(waypoint)
 
         # Move to Waypoint
         move_robot_to_waypoint(robot, objects, pose_of_waypoint)
