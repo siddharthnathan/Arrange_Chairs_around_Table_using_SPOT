@@ -21,23 +21,32 @@ class Object:
 
 		# Initialise the Translation and Rotation components of Current pose
 		self.pose = {'Translation': None, 'Rotation': None, 'Pose': None}
+
+		# If name is Chair
+		if "Chair" in self.name:
+
+			# Initialise the Translation and Rotation components of Final pose wrt Camera frame
+			self.final_pose_wrt_camera = {'Translation': None, 'Rotation': None, 'Pose': None}
+
+			# Initialise the Translation and Rotation components of Current pose wrt Camera frame
+			self.pose_wrt_camera = {'Translation': None, 'Rotation': None, 'Pose': None}
 		
-		# Set Arranged flag as True
-		self.is_arranged = True
+			# Set Arranged flag as True
+			self.is_arranged = True
 
-		# Initialise Displacement from Final pose
-		self.displacement = None
+			# Initialise Displacement from Final pose
+			self.displacement = None
 
-		# Initialise Translation and Rotation threshold to check Displacement
-		self.translation_threshold = 0.1
-		self.rotation_threshold = 5
+			# Initialise Translation and Rotation threshold to check Displacement
+			self.translation_threshold = 0.1
+			self.rotation_threshold = 5
 
 
 	# Define a Function to check if Current pose is close to Final pose
 	def is_pose_at_final_pose(self):
 
 		# Get the Displacement matrix of Chair wrt Final pose
-		self.displacement = np.linalg.inv(self.final_pose['Pose']) @ self.pose['Pose']
+		self.displacement = np.linalg.inv(self.final_pose_wrt_camera['Pose']) @ self.pose_wrt_camera['Pose']
 
 		# Extract the Displacement Translation and Rotation components of Chair
 		translation, rotation = get_components_from_pose_for_chair(self.displacement)
@@ -71,6 +80,19 @@ class Object:
 		if self.final_pose['Pose'] is not None:
 			print("Final_Pose:")
 			print("[ Translation:", self.final_pose['Translation'], ", Rotation:", self.final_pose['Rotation'], ']')
+
+		# Display for Chairs only
+		if "Chair" in self.name:
+
+			# Display Translation and Rotation if Current pose wrt Camera is not None
+			if self.pose_wrt_camera['Pose'] is not None:
+				print("Pose wrt Camera:")
+				print("[ Translation:", self.pose_wrt_camera['Translation'], ", Rotation:", self.pose_wrt_camera['Rotation'], ']')
+
+			#  Display Translation and Rotation if Final pose wrt Camera is not None
+			if self.final_pose_wrt_camera['Pose'] is not None:
+				print("Final Pose wrt Camera:")
+				print("[ Translation:", self.final_pose_wrt_camera['Translation'], ", Rotation:", self.final_pose_wrt_camera['Rotation'], ']')
 		print("\n")
 			
 

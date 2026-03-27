@@ -103,7 +103,7 @@ def localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects):
             return utils.round_matrix_list(pose_of_wall @ np.linalg.inv(aruco_tag_data_wrt_spot_frame['Pose']), 3)
 
 
-# Define a Function to Update Poses of Chairs wrt Camera frame and SPOT frame
+# Define a Function to Update Poses of Chairs
 def update_poses_of_chairs(images, objects, aruco_tags_data_wrt_spot_frame, 
                            pose_of_spot_body_frame, aruco_type, camera_calibration_params):
 
@@ -124,13 +124,19 @@ def update_poses_of_chairs(images, objects, aruco_tags_data_wrt_spot_frame,
 
             # Update Pose of Chair wrt Origin AruCo tag
             objects.chairs[i].pose['Pose'] = utils.round_matrix_list(objects.get_pose_of_object('Camera_1') @ pose_of_chair_wrt_camera_1_frame, 3)
+
+            # Update Pose of Chair wrt Camera frame
+            objects.chairs[i].pose_wrt_camera['Pose'] = pose_of_chair_wrt_camera_1_frame
         
         # If Chair is detected by Camera 2
         elif pose_of_chair_wrt_camera_2_frame is not None:
 
             # Update Pose of Chair wrt Origin AruCo tag
             objects.chairs[i].pose['Pose'] = utils.round_matrix_list(objects.get_pose_of_object('Camera_2') @ pose_of_chair_wrt_camera_2_frame, 3)
-        
+
+            # Update Pose of Chair wrt Camera frame
+            objects.chairs[i].pose_wrt_camera['Pose'] = pose_of_chair_wrt_camera_2_frame
+
         # If Chair is detected by SPOT
         elif pose_of_chair_wrt_spot_frame is not None:
 
@@ -139,7 +145,41 @@ def update_poses_of_chairs(images, objects, aruco_tags_data_wrt_spot_frame,
 
         # Update pose components of Chairs
         objects.chairs[i].pose['Translation'], objects.chairs[i].pose['Rotation'] = utils.get_components_from_pose_for_chair(objects.chairs[i].pose['Pose'])
+        objects.chairs[i].pose_wrt_camera['Translation'], objects.chairs[i].pose_wrt_camera['Rotation'] = utils.get_components_from_pose(objects.chairs[i].pose_wrt_camera['Pose'])
+
+    # Return the Objects with updated Poses
+    return objects
+
+
+# Define a Function to Update Final poses of Chairs wrt Camera Frame
+def update_final_poses_of_chairs_wrt_camera(images, objects, aruco_type, camera_calibration_params):
+
+    # Get the Pose of AruCo tags wrt both Cameras
+    aruco_tags_data_wrt_camera_1_frame = estimate_poses_of_aruco_tags(images[0], aruco_type, camera_calibration_params['Camera_1']) 
+    aruco_tags_data_wrt_camera_2_frame = estimate_poses_of_aruco_tags(images[1], aruco_type, camera_calibration_params['Camera_2'])
+    
+    # For every Chair Object
+    for i in range(len(objects.chairs)):
+
+        # Get the Pose of Chair wrt Camera frame
+        pose_of_chair_wrt_camera_1_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_1_frame, objects.chairs[i].aruco_id)
+        pose_of_chair_wrt_camera_2_frame = utils.get_pose_of_aruco_tag(aruco_tags_data_wrt_camera_2_frame, objects.chairs[i].aruco_id)
+
+        # If Chair is detected by Camera 1
+        if pose_of_chair_wrt_camera_1_frame is not None:
+
+            # Update Pose of Chair wrt Camera
+            objects.chairs[i].final_pose_wrt_camera['Pose'] = pose_of_chair_wrt_camera_1_frame
         
+        # If Chair is detected by Camera 2
+        elif pose_of_chair_wrt_camera_2_frame is not None:
+
+            # Update Pose of Chair wrt Camera
+            objects.chairs[i].final_pose_wrt_camera['Pose'] = pose_of_chair_wrt_camera_2_frame
+        
+        # Update pose components of Chairs
+        objects.chairs[i].final_pose_wrt_camera['Translation'], objects.chairs[i].final_pose_wrt_camera['Rotation'] = utils.get_components_from_pose(objects.chairs[i].final_pose_wrt_camera['Pose'])
+    
     # Return the Objects with updated Poses
     return objects
 

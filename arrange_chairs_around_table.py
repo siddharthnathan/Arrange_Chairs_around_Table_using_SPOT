@@ -150,7 +150,17 @@ def main():
 
     # Initialise Objects poses
     objects = utils.Objects()
-    '''
+    
+    # Read Image frames from both Cameras for Initialising
+    camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
+    camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
+    
+    # Update Final poses of Chairs wrt Camera frame
+    objects = pose_estimation.update_final_poses_of_chairs_wrt_camera(
+                                                                        [camera_1_frame, camera_2_frame], objects,
+                                                                        aruco_type, camera_calibration_params
+                                                                     )
+            
     # Try block
     try:
 
@@ -194,7 +204,7 @@ def main():
     finally:
         camera_1_pipeline.stop()
         camera_2_pipeline.stop()
-    '''
+    
 
 # Invoke the Main Function
 if __name__ == "__main__":
