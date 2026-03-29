@@ -30,16 +30,13 @@ class Object:
 
 			# Initialise the Translation and Rotation components of Current pose wrt Camera frame
 			self.pose_wrt_camera = {'Translation': None, 'Rotation': None, 'Pose': None}
-		
-			# Set Arranged flag as True
-			self.is_arranged = True
 
 			# Initialise Displacement from Final pose
 			self.displacement = None
 
 			# Initialise Translation and Rotation threshold to check Displacement
 			self.translation_threshold = 0.1
-			self.rotation_threshold = 5
+			self.rotation_threshold = 10
 
 
 	# Define a Function to check if Current pose is close to Final pose
@@ -186,9 +183,6 @@ class Objects:
 
 			# If Chair is not Arranged
 			if not object.is_pose_at_final_pose():
-
-				# Set Arranged flag to False
-				object.is_arranged = False
 
 				# Append chair to Unarranged chairs list
 				unarranged_chairs.append(object)
@@ -400,30 +394,8 @@ def get_waypoints_path(from_waypoint, to_waypoint):
     for i in range(8):
         waypoint_names.append("Waypoint_" + str(i+1))
     
-    # If From Waypoint is before To Waypoint
-    if from_waypoint.name < to_waypoint.name:
-
-        # Initialise Clockwise path
-        clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name) + 1]
-		
-        # Initialise Anti Clockwise path
-        anti_clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : -1]
-        anti_clockwise_path_2 = waypoint_names[7: waypoint_names.index(to_waypoint.name) - 1: -1]
-        anti_clockwise_path = anti_clockwise_path_1 + anti_clockwise_path_2
-
-    # If From Waypoint is after To Waypoint
-    else:
-
-        # Initialise Anti Clockwise path
-        anti_clockwise_path = waypoint_names[waypoint_names.index(from_waypoint.name): waypoint_names.index(to_waypoint.name) - 1: -1]		
-		
-        # Initialise Clockwise path
-        clockwise_path_1 = waypoint_names[waypoint_names.index(from_waypoint.name): : ]
-        clockwise_path_2 = waypoint_names[ : waypoint_names.index(to_waypoint.name) + 1: ]
-        clockwise_path = clockwise_path_1 + clockwise_path_2	
-		
-    # Return Optimal Path
-    if len(clockwise_path) < len(anti_clockwise_path):
-        return clockwise_path
-    else:
-        return anti_clockwise_path
+    # Return the Shortest Path around Waypoints
+    i, j, n = waypoint_names.index(from_waypoint.name), waypoint_names.index(to_waypoint.name), len(waypoint_names)
+    rot = waypoint_names[i:] + waypoint_names[:i]
+    return rot[:(j-i)%n+1] if (j-i)%n <= (i-j)%n else [rot[0]] + rot[:-(i-j)%n-1:-1]
+        

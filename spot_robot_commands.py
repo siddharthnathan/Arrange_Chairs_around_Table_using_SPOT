@@ -305,44 +305,6 @@ def move_arm_to_grasp_pose(robot, pose):
         time.sleep(5)
 
 
-# Define a Function to Freeze arm Joints
-def freeze_arm_joints(robot):
-
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
-
-    # Create required Robot clients
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-
-    # Until Lease exists
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-
-        # Freeze Arm Joints and Send the Request
-        command = RobotCommandBuilder.arm_joint_freeze_command()
-        command_client.robot_command(command, end_time_secs = time.time() + 2)
-        time.sleep(2)
-    
-
-# Define a Function to Unfreeze arm Joints
-def unfreeze_arm_joints(robot):
-
-    # Verify the robot is not estopped and that an external application has registered and holds an estop endpoint.
-    assert not robot.is_estopped(), 'Robot is estopped. Please use an external E-Stop client, such as the estop SDK example, to configure E-Stop.'
-
-    # Create required Robot clients
-    lease_client = robot.ensure_client(bosdyn.client.lease.LeaseClient.default_service_name)
-    command_client = robot.ensure_client(RobotCommandClient.default_service_name)
-
-    # Until Lease exists
-    with bosdyn.client.lease.LeaseKeepAlive(lease_client, must_acquire = True, return_at_exit = False):
-
-        # Unfreeze Arm Joints and Send the Request
-        command = RobotCommandBuilder.arm_stow_command()
-        command_client.robot_command(command, end_time_secs = time.time() + 2)
-        time.sleep(2)
-
-
 # Define a Function to Grasp Chair by its Seat from above using SPOT gripper
 def grasp_chair_using_SPOT(robot, pose_of_chair_wrt_spot):
 
@@ -386,9 +348,6 @@ def move_SPOT_behind_chair(robot, pose_of_chair_wrt_spot):
 
 # Define a Function to Let go of Chair after Arranging around Table
 def let_go_of_chair(robot):
-
-    # Unfreeze Arm Joints
-    unfreeze_arm_joints(robot)
 
     # Open Arm Gripper
     open_or_close_gripper(robot, action = 'open')
