@@ -91,9 +91,8 @@ class DetectFiducial(object):
         self._robot.time_sync.wait_for_sync()
 
         # Get the fiducial objects Spot detects with the world object service
-        for _ in range(4):
-            fiducials = self.get_fiducial_objects()
-            time.sleep(1)
+        time.sleep(2)
+        fiducials = self.get_fiducial_objects()
         aruco_tags_wrt_spot_body_frame = []
 
         # If Fiducials are Detected
@@ -194,6 +193,7 @@ def move_arm_to_default_pose(robot):
         # Send the Request
         command_client.robot_command(command, end_time_secs = time.time() + 3)
         robot.logger.info('Moving arm to default pose')
+        time.sleep(2)
 
 
 # Define a Function to Move SPOT to a given Pose
@@ -222,7 +222,7 @@ def move_robot_to_location(robot, pose):
                                                                             build_on_command = None
                                                                           )
         command_client.robot_command(cmd, end_time_secs = time.time() + 10)
-    time.sleep(2)
+    time.sleep(3)
 
 
 # Define a Function to Get pose of SPOT arm with respect to Body frame
@@ -381,14 +381,14 @@ def move_SPOT_to_nearest_waypoint(robot, objects):
             nearest_waypoint = waypoint
     
     # Move Robot to Nearest Waypoint
-    move_robot_to_waypoint(robot, objects, nearest_waypoint.final_pose['Pose'])
+    move_robot_to_waypoint(robot, objects, nearest_waypoint.name)
     
     # Return the Nearest Waypoint
     return nearest_waypoint
 
 
 # Define a Function to Move SPOT Robot to Waypoint
-def move_robot_to_waypoint(robot, objects, pose_of_waypoint):
+def move_robot_to_waypoint(robot, objects, waypoint):
 
     # Get the Pose of AruCo tags wrt SPOT Body Frame
     aruco_tags_data_wrt_spot_frame = DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()        
@@ -397,7 +397,8 @@ def move_robot_to_waypoint(robot, objects, pose_of_waypoint):
     pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
 
     # Compute Pose to move and Move Robot
-    pose_to_move_to_waypoint = np.linalg.inv(pose_of_spot_body_frame) @ pose_of_waypoint
+    print("Moving Robot to ", waypoint)
+    pose_to_move_to_waypoint = np.linalg.inv(pose_of_spot_body_frame) @ objects.get_pose_of_object(waypoint)
     move_robot_to_location(robot, pose_to_move_to_waypoint)
 
 
@@ -407,9 +408,6 @@ def move_SPOT_across_waypoints(robot, objects, waypoints_path):
     # For every Waypoint in its Path
     for waypoint in waypoints_path:
 
-        # Get Pose of Waypoint
-        pose_of_waypoint = objects.get_pose_of_object(waypoint)
-
         # Move to Waypoint
-        move_robot_to_waypoint(robot, objects, pose_of_waypoint)
+        move_robot_to_waypoint(robot, objects, waypoint)
         time.sleep(1)

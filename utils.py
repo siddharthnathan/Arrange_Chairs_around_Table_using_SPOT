@@ -178,6 +178,9 @@ class Objects:
 		# Initialise Unarranged chairs
 		unarranged_chairs = []
 
+  		# Initialise Arranged chairs
+		arranged_chairs = []
+
 		# For every Chair
 		for object in self.chairs:
 
@@ -187,13 +190,21 @@ class Objects:
 				# Append chair to Unarranged chairs list
 				unarranged_chairs.append(object)
 
-		# Display Details
-		if len(unarranged_chairs) == 0:
-			print("Unarranged Chairs: None")
-		else:
-			print("Unarranged Chairs: ")
-			for chair in unarranged_chairs:
-				print(chair.name, ": ", chair.displacement)
+   			# If Chair is Arranged
+			else:
+
+				# Append chair to Arranged chairs list
+				arranged_chairs.append(object)
+
+		# Display Details for Arranged Chairs
+		print("Arranged Chairs: ")
+		for chair in arranged_chairs:
+			print(chair.name, ": ", chair.displacement)
+		
+		# Display Details for Unarranged Chairs
+		print("Unarranged Chairs: ")
+		for chair in unarranged_chairs:
+			print(chair.name, ": ", chair.displacement)
 
 		# Return the List of Unarranged chairs
 		return unarranged_chairs		

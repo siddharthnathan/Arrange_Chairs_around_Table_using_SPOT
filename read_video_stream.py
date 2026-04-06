@@ -70,6 +70,7 @@ def read_camera_calibration_params():
 def read_frame_from_pipeline(camera_pipeline):
 
     # Get Frames from Main camera
+    time.sleep(1)
     camera_frame = camera_pipeline.wait_for_frames()
     camera_frame = camera_frame.get_color_frame()
     camera_frame = np.asanyarray(camera_frame.get_data())

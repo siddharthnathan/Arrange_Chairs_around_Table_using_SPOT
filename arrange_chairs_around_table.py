@@ -11,7 +11,14 @@ import cv2
 
 
 # Define a Function to get the Chair that has to be Arranged
-def get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame):
+def get_chair_to_arrange(robot, objects, unarranged_chairs):
+    
+    # Get the Pose of AruCo tags wrt SPOT Body Frame
+    aruco_tags_data_wrt_spot_frame = spot_robot_commands.DetectFiducial(robot).detect_aruco_tags_wrt_spot_body_frame()
+            
+    # Determine the Pose of SPOT body frame wrt Origin AruCo tag
+    pose_of_spot_body_frame = pose_estimation.localize_spot_wrt_origin(aruco_tags_data_wrt_spot_frame, objects)
+
 
     # Initialise Minimum Distance
     min_distance = 100
@@ -93,13 +100,13 @@ def arrange_chair_around_table(robot, objects, chair_to_arrange):
     
 
 # Define a Function to Arrange Chairs around a Table
-def arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_body_frame):
+def arrange_chairs_around_table(robot, objects, unarranged_chairs):
     
     # Until Chairs are Arranged around Table
     print("Arranging Chairs around Table... \n")
-
+    
     # Get the Chair that has to be Arranged around Table
-    chair_to_arrange = get_chair_to_arrange(unarranged_chairs, pose_of_spot_body_frame)
+    chair_to_arrange = get_chair_to_arrange(robot, objects, unarranged_chairs)
 
     # Go to the Nearest Waypoint from the Pose of Chair
     print("Moving to Nearest Waypoint")
@@ -143,11 +150,11 @@ def main():
 
     # Initialise Objects poses
     objects = utils.Objects()
-    
+        
     # Read Image frames from both Cameras for Initialising
     camera_1_frame = read_video_stream.read_frame_from_pipeline(camera_1_pipeline)
     camera_2_frame = read_video_stream.read_frame_from_pipeline(camera_2_pipeline)
-    
+
     # Update Final poses of Chairs wrt Camera frame
     objects = pose_estimation.update_final_poses_of_chairs_wrt_camera(
                                                                         [camera_1_frame, camera_2_frame], objects,
@@ -187,11 +194,11 @@ def main():
 
             # Else, Begin Arranging Chairs   
             else:
-                arrange_chairs_around_table(robot, objects, unarranged_chairs, pose_of_spot_body_frame)
+                arrange_chairs_around_table(robot, objects, unarranged_chairs)
 
             # Wait 3 seconds
             time.sleep(3)        
-
+    
     # Stop streaming finally
     finally:
         camera_1_pipeline.stop()
