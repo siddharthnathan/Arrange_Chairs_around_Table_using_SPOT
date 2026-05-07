@@ -54,7 +54,8 @@ class Object:
 		# If the Difference exceeds a threshold, Return False
 		if abs(x) > self.translation_threshold \
 		or abs(z) > self.translation_threshold \
-		or abs(ry) > self.rotation_threshold:
+		or abs(ry) > self.rotation_threshold \
+      	and abs(ry) < 20:
 			return False
 
 		# Else, Return True
